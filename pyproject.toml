@@ -1,0 +1,7 @@
+[project]
+name = "typ2docx"
+version = "0.1.0"
+
+[build-system]
+requires = ["maturin"]
+build-backend = "maturin"
