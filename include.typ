@@ -2,6 +2,6 @@
 
 #lorem(10)
 
-$ "another equation" $
+$ "equation from another file" $
 
 #lorem(10)

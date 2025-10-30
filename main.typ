@@ -1,3 +1,5 @@
+#let eq = $ "not the first Eq" $
+
 // block math
 
 #lorem(20)
@@ -10,7 +12,11 @@ $ integral_0^infinity d x = frac(pi, 2) $
 
 #lorem(20)
 
-#import "include.typ"
+#eq // define first, invoke later
+
+#lorem(20)
+
+#include "include.typ"
 
 // inline math
 
