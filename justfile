@@ -6,4 +6,4 @@ add-marker file:
     cat {{file}} >> {{file}}.marked
 
 extract-math file:
-    cargo run --quiet --bin extract -- {{file}}
+    cargo run --quiet -- {{file}}

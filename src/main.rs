@@ -4,7 +4,7 @@ use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
 
-use comemo::Track;
+use typst::comemo::Track;
 use typst::diag::FileResult;
 use typst::engine::{Route, Sink, Traced};
 use typst::foundations::{Bytes, Content, Datetime};
