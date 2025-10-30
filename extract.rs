@@ -1,120 +1,254 @@
-//! Example script to extract equation nodes from a Typst project.
-//!
-//! Usage:
-//!   cargo run --example extract_equations -- main.typ
-//!
-//! This script demonstrates how to:
-//! 1. Parse a Typst file into an AST
-//! 2. Find all include/import statements and recursively process included files
-//! 3. Recursively traverse the AST
-//! 4. Find nodes with SyntaxKind::Equation
-//! 5. Extract and print their source code
-
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::env;
-use std::fs;
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
-use typst_syntax::ast::{AstNode, Expr, ModuleInclude, ModuleImport};
-use typst_syntax::{parse, SyntaxKind, SyntaxNode};
+use std::sync::Mutex;
+
+use comemo::Track;
+use typst::diag::{FileError, FileResult};
+use typst::foundations::{Bytes, Content, Datetime};
+use typst::math::EquationElem;
+use typst::syntax::{FileId, Source, VirtualPath};
+use typst::text::{Font, FontBook};
+use typst::utils::LazyHash;
+use typst::{Library, LibraryExt, World};
+use typst_eval::eval;
 
 fn main() {
-    let arg = env::args().nth(1).expect("Usage: extract_equations <path-to-typ-file>");
+    let arg = env::args()
+        .nth(1)
+        .expect("Usage: extract <path-to-typ-file>");
     let file_path = Path::new(&arg);
 
-    let project_root = file_path.parent().unwrap_or(Path::new("."));
-    let mut visited = HashSet::new();
-    let mut equations = Vec::new();
+    let world = match SimpleWorld::new(file_path) {
+        Ok(w) => w,
+        Err(e) => {
+            eprintln!("Error creating world: {}", e);
+            std::process::exit(1);
+        }
+    };
 
-    if let Err(e) = process_file(file_path, project_root, &mut visited, &mut equations) {
-        eprintln!("Error: {}", e);
-        std::process::exit(1);
-    }
+    let mut equations: Vec<(FileId, String)> = Vec::new();
+    let mut sink = typst::engine::Sink::default();
+
+    // Evaluate the main file
+    let main = world.main();
+    let source = match world.source(main) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error reading source: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let routines = &typst::ROUTINES;
+    let traced = typst::engine::Traced::default();
+
+    let content = match eval(
+        routines,
+        (&world as &dyn World).track(),
+        traced.track(),
+        sink.track_mut(),
+        typst::engine::Route::default().track(),
+        &source,
+    ) {
+        Ok(m) => m.content(),
+        Err(diagnostics) => {
+            eprintln!("Evaluation errors:");
+            for diag in diagnostics {
+                eprintln!("  {}", diag.message);
+            }
+            std::process::exit(1);
+        }
+    };
+
+    // Traverse the content tree to find equations in document order
+    extract_equations(&content, &world, &mut equations);
 
     if equations.is_empty() {
         println!("No equations found.");
     } else {
-        println!("Found {} equation(s) in {} file(s):\n", equations.len(), visited.len());
-        for (i, (file, eq)) in equations.iter().enumerate() {
-            println!("Equation {} (from {}):\n{}\n", i + 1, file.display(), eq);
+        println!("Found {} equation(s) in document order:\n", equations.len());
+        for (i, (file_id, eq_text)) in equations.iter().enumerate() {
+            let file_name = file_id.vpath().as_rootless_path().display();
+            println!("Equation {} (from {}):\n{}\n", i + 1, file_name, eq_text);
         }
     }
 }
 
-fn process_file(
-    file_path: &Path,
-    project_root: &Path,
-    visited: &mut HashSet<PathBuf>,
-    equations: &mut Vec<(PathBuf, String)>,
-) -> Result<(), String> {
-    let canonical = file_path.canonicalize()
-        .map_err(|e| format!("Failed to read '{}': {}", file_path.display(), e))?;
+fn extract_equations(content: &Content, world: &dyn World, equations: &mut Vec<(FileId, String)>) {
+    let _ = content.traverse(&mut |elem: Content| -> ControlFlow<()> {
+        if let Some(_eq) = elem.to_packed::<EquationElem>() {
+            // Get the source text from the span
+            let span = elem.span();
 
-    if !visited.insert(canonical.clone()) {
-        return Ok(()); // Already visited
-    }
-
-    let content = fs::read_to_string(file_path)
-        .map_err(|e| format!("Failed to read '{}': {}", file_path.display(), e))?;
-
-    let root = parse(&content);
-    traverse(&root, &canonical, file_path, project_root, visited, equations)?;
-
-    Ok(())
-}
-
-fn traverse(
-    node: &SyntaxNode,
-    file_path: &PathBuf,
-    current_file: &Path,
-    project_root: &Path,
-    visited: &mut HashSet<PathBuf>,
-    equations: &mut Vec<(PathBuf, String)>,
-) -> Result<(), String> {
-    // Collect equations
-    if node.kind() == SyntaxKind::Equation {
-        equations.push((file_path.clone(), node.clone().into_text().to_string()));
-    }
-
-    // Process imports/includes
-    if let Some(import) = ModuleImport::from_untyped(node) {
-        if let Some(path) = get_path(&import.source()) {
-            process_file(&resolve_path(&path, current_file, project_root)?, project_root, visited, equations)?;
+            // Try to get the file ID from the span
+            if let Some(file_id) = span.id() {
+                // Try to load the source file
+                match world.source(file_id) {
+                    Ok(source) => {
+                        // Get the byte range for this span
+                        if let Some(range) = source.range(span) {
+                            let text = &source.text()[range];
+                            equations.push((file_id, text.to_string()));
+                        } else {
+                            // Span range might not be found - try to extract plain text
+                            let text = elem.plain_text();
+                            if !text.is_empty() {
+                                equations.push((file_id, format!("[no range: {}]", text)));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        // File might not be loaded - try to extract what we can
+                        let text = elem.plain_text();
+                        if !text.is_empty() {
+                            equations.push((file_id, format!("[load failed: {}]", text)));
+                        }
+                    }
+                }
+            } else {
+                // Span is detached
+                let text = elem.plain_text();
+                if !text.is_empty() {
+                    equations.push((world.main(), format!("[detached: {}]", text)));
+                }
+            }
         }
-    } else if let Some(include) = ModuleInclude::from_untyped(node) {
-        if let Some(path) = get_path(&include.source()) {
-            process_file(&resolve_path(&path, current_file, project_root)?, project_root, visited, equations)?;
+        ControlFlow::Continue(())
+    });
+}
+
+/// A simple World implementation for file-based Typst projects.
+struct SimpleWorld {
+    project_root: PathBuf,
+    main: FileId,
+    files: Mutex<HashMap<FileId, Source>>,
+    library: LazyHash<Library>,
+    book: LazyHash<FontBook>,
+    fonts: Vec<Font>,
+}
+
+impl SimpleWorld {
+    fn new(main_path: &Path) -> Result<Self, String> {
+        // First canonicalize the main file path
+        let main_path_canonical = main_path.canonicalize().map_err(|e| {
+            format!(
+                "Failed to resolve main file '{}': {}",
+                main_path.display(),
+                e
+            )
+        })?;
+
+        // Then get the project root from the canonicalized main file's parent
+        // Also canonicalize the project root to handle symlinks correctly
+        let project_root = main_path_canonical
+            .parent()
+            .ok_or_else(|| {
+                format!(
+                    "Main file '{}' has no parent directory",
+                    main_path_canonical.display()
+                )
+            })?
+            .canonicalize()
+            .map_err(|e| format!("Failed to canonicalize project root: {}", e))?;
+
+        let main_vpath =
+            VirtualPath::within_root(&main_path_canonical, &project_root).ok_or_else(|| {
+                format!(
+                    "Main file '{}' is outside project root '{}'",
+                    main_path_canonical.display(),
+                    project_root.display()
+                )
+            })?;
+
+        let main_id = FileId::new(None, main_vpath);
+
+        // For equation extraction, we don't need fonts, but World trait requires them
+        // Use an empty font book - equations will still be extracted correctly
+        let fonts = Vec::new();
+        let book = FontBook::new();
+
+        Ok(Self {
+            project_root,
+            main: main_id,
+            files: Mutex::new(HashMap::default()),
+            library: LazyHash::new(Library::default()),
+            book: LazyHash::new(book),
+            fonts,
+        })
+    }
+
+    fn load_source(&self, id: FileId) -> FileResult<Source> {
+        let mut files = self.files.lock().unwrap();
+        if let Some(source) = files.get(&id) {
+            return Ok(source.clone());
         }
-    }
 
-    // Recurse into children
-    for child in node.children() {
-        traverse(child, file_path, current_file, project_root, visited, equations)?;
-    }
+        // Try to resolve the path relative to the project root
+        let path = match id.vpath().resolve(&self.project_root) {
+            Some(p) => p,
+            None => {
+                // If direct resolution fails, try resolving relative to the project root
+                // VirtualPath is always relative to the project root and starts with /
+                let relative_path = id.vpath().as_rootless_path();
+                let full_path = self.project_root.join(relative_path);
 
-    Ok(())
+                // Verify the file exists and is within the project root
+                if full_path.exists() && full_path.starts_with(&self.project_root) {
+                    full_path
+                } else {
+                    return Err(FileError::NotFound(id.vpath().as_rootless_path().into()));
+                }
+            }
+        };
+
+        // Verify the file exists before trying to read it
+        if !path.exists() {
+            return Err(FileError::NotFound(path.clone()));
+        }
+
+        let content = std::fs::read_to_string(&path).map_err(|e| FileError::from_io(e, &path))?;
+
+        let source = Source::new(id, content);
+        files.insert(id, source.clone());
+        Ok(source)
+    }
 }
 
-fn get_path(expr: &Expr) -> Option<String> {
-    match expr {
-        Expr::Str(s) if !s.get().starts_with('@') => Some(s.get().to_string()),
-        _ => None,
+impl World for SimpleWorld {
+    fn library(&self) -> &LazyHash<Library> {
+        &self.library
     }
-}
 
-fn resolve_path(path_str: &str, current_file: &Path, project_root: &Path) -> Result<PathBuf, String> {
-    let path = if path_str.starts_with('/') {
-        project_root.join(&path_str[1..])
-    } else {
-        current_file.parent()
-            .ok_or_else(|| format!("Cannot resolve path from {}", current_file.display()))?
-            .join(path_str)
-    };
+    fn book(&self) -> &LazyHash<FontBook> {
+        &self.book
+    }
 
-    let path = if path.extension().is_none() {
-        path.with_extension("typ")
-    } else {
-        path
-    };
+    fn main(&self) -> FileId {
+        self.main
+    }
 
-    path.canonicalize().map_err(|_| format!("File not found: {}", path.display()))
+    fn source(&self, id: FileId) -> FileResult<Source> {
+        // Typst's evaluation handles cycle detection, so we just load sources
+        self.load_source(id)
+    }
+
+    fn file(&self, id: FileId) -> FileResult<Bytes> {
+        let path = id
+            .vpath()
+            .resolve(&self.project_root)
+            .ok_or_else(|| FileError::NotFound(id.vpath().as_rootless_path().into()))?;
+
+        let bytes = std::fs::read(&path).map_err(|_| FileError::NotFound(path.clone()))?;
+        Ok(Bytes::new(bytes))
+    }
+
+    fn font(&self, index: usize) -> Option<Font> {
+        self.fonts.get(index).cloned()
+    }
+
+    fn today(&self, _: Option<i64>) -> Option<Datetime> {
+        None
+    }
 }
