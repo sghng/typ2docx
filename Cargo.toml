@@ -8,6 +8,6 @@ name = "extract"
 crate-type = ["cdylib"]
 
 [dependencies]
+pyo3 = { version = "0.27", features = ["extension-module"] }
 typst = "0.14"
 typst-eval = "0.14"
-pyo3 = { version = "0.27", features = ["extension-module"] }
