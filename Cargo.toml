@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 comemo = "0.5.0"
 typst = "0.14.0"
-typst-syntax = "0.14.0"
 typst-eval = "0.14.0"
 
 [[bin]]
