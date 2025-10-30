@@ -20,16 +20,10 @@ console = Console()
 @app.command()
 def extract(
     path: str = typer.Argument(help="Entry point to the Typst project"),
-    pretty: bool = typer.Option(
-        False, "--pretty", "-p", help="Pretty-print JSON output"
-    ),
 ):
     """Extract equations from a Typst project and serialize them to JSON."""
     equations = extract_equations(path)
-    if pretty:
-        console.print(JSON(json.dumps(equations)))
-    else:
-        print(json.dumps(equations))
+    console.print(JSON(json.dumps(equations)))
 
 
 @app.command()
