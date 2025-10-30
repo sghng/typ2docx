@@ -1,6 +1,7 @@
 [project]
 name = "typ2docx"
 version = "0.1.0"
+dependencies = ["typer", "rich"]
 
 [build-system]
 requires = ["maturin"]
