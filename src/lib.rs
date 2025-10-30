@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use std::env;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
+
+use pyo3::prelude::*;
 
 use typst::comemo::Track;
 use typst::diag::FileResult;
@@ -15,49 +16,6 @@ use typst::utils::LazyHash;
 use typst::ROUTINES;
 use typst::{Library, LibraryExt, World};
 use typst_eval::eval;
-
-fn main() {
-    let arg = env::args().nth(1).unwrap();
-    let path = Path::new(&arg);
-
-    let world = SimpleWorld::new(path);
-
-    let content = eval(
-        &ROUTINES,
-        (&world as &dyn World).track(),
-        Traced::default().track(),
-        Sink::default().track_mut(),
-        Route::default().track(),
-        &world.source(world.main()).unwrap(),
-    )
-    .unwrap()
-    .content();
-
-    let equations = extract(&content, &world);
-
-    if !equations.is_empty() {
-        println!("Found {} equations:\n", equations.len());
-        for (i, eq_text) in equations.iter().enumerate() {
-            println!("Eq {}: {}\n", i + 1, eq_text);
-        }
-    }
-}
-
-/// Extract equation sources by traversing the content
-fn extract(content: &Content, world: &dyn World) -> Vec<String> {
-    let mut equations: Vec<String> = Vec::new();
-    // TODO: make the traversal more efficient
-    let _ = content.traverse(&mut |elem: Content| -> ControlFlow<()> {
-        if let Some(_) = elem.to_packed::<EquationElem>() {
-            let span = elem.span();
-            let file_id = span.id().unwrap();
-            let source = world.source(file_id).unwrap();
-            equations.push(source.text()[source.range(span).unwrap()].to_string());
-        }
-        ControlFlow::Continue(())
-    });
-    equations
-}
 
 /// A minimal World implementation for evaluation and extraction
 struct SimpleWorld {
@@ -120,4 +78,47 @@ impl World for SimpleWorld {
     fn today(&self, _: Option<i64>) -> Option<Datetime> {
         None
     }
+}
+
+/// Python-exposed function: extract equations from a Typst file path
+#[pyfunction]
+fn extract_equations(path: &str) -> PyResult<Vec<String>> {
+    let path = Path::new(path);
+
+    let world = SimpleWorld::new(path);
+
+    let content = eval(
+        &ROUTINES,
+        (&world as &dyn World).track(),
+        Traced::default().track(),
+        Sink::default().track_mut(),
+        Route::default().track(),
+        &world.source(world.main()).unwrap(),
+    )
+    .unwrap()
+    .content();
+
+    let mut equations: Vec<String> = Vec::new();
+    let _ = content.traverse(&mut |elem: Content| -> ControlFlow<()> {
+        if let Some(_) = elem.to_packed::<EquationElem>() {
+            let span = elem.span();
+            if let Some(file_id) = span.id() {
+                if let Ok(source) = world.source(file_id) {
+                    if let Some(range) = source.range(span) {
+                        equations.push(source.text()[range].to_string());
+                    }
+                }
+            }
+        }
+        ControlFlow::Continue(())
+    });
+    Ok(equations)
+}
+
+/// Python module initializer
+#[pymodule]
+fn extract(_py: Python, m: Bound<'_, PyModule>) -> PyResult<()> {
+    let func = wrap_pyfunction!(extract_equations, m.py())?;
+    m.add_function(func)?;
+    Ok(())
 }

@@ -3,7 +3,11 @@ name = "typ2docx"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-typst = "0.14.0"
-typst-eval = "0.14.0"
+[lib]
+name = "extract"
+crate-type = ["cdylib"]
 
+[dependencies]
+typst = "0.14"
+typst-eval = "0.14"
+pyo3 = { version = "0.27", features = ["extension-module"] }
