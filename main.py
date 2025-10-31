@@ -1,5 +1,4 @@
 #! /usr/bin/env python3
-import json
 import subprocess
 from pathlib import Path
 from time import sleep
@@ -22,6 +21,8 @@ def extract(
     path: str = typer.Argument(help="Entry point to the Typst project"),
 ):
     """Extract equations from a Typst project and serialize them to JSON."""
+    import json
+
     equations = extract_equations(path)
     console.print(JSON(json.dumps(equations)))
 
@@ -31,10 +32,40 @@ def convert(
     path: str = typer.Argument(..., help="Entry point to the Typst project"),
 ):
     """Convert a Typst project to DOCX format."""
+    from concurrent.futures import ThreadPoolExecutor
+
     path: Path = Path(path)
     console.print(f"[bold blue]Converting[/bold blue] {path}...")
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future1 = executor.submit(branch1, path)
+        future2 = executor.submit(branch2, path)
+
+        # Wait for both to complete
+        result1 = future1.result()
+        result2 = future2.result()
+
+
+def branch1(path: Path):
     typ2pdf(path)
     pdf2docx(path)
+
+
+def branch2(path: Path):
+    # construct source file
+    eqs = extract_equations(str(path))
+    marked_eqs = []
+    for i, eq in enumerate(eqs):
+        marked_eqs.append(f"{marker(i)}{eq}{marker(i)}")
+    src = "\n\n".join(marked_eqs)
+    with open("typ2docx.b.typ", "w") as f:
+        f.write(src)
+
+    # use pandoc to convert to DOCX
+    subprocess.run(["pandoc", "typ2docx.b.typ", "-o", "typ2docx.b.docx"])
+
+
+def marker(i: int):
+    return rf"\@\@MATH{i}\@\@"
 
 
 def typ2pdf(path: Path):
