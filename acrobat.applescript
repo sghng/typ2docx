@@ -3,7 +3,7 @@ on run argv
     if (count of argv) > 0 then
         set pdfPath to item 1 of argv
     else
-        set pdfPath to "/Users/sghuang/dev/typ2docx/tmp.pdf"
+        set pdfPath to "/Users/sghuang/dev/typ2docx/typ2docx.a.pdf"
     end if
 
     tell application "System Events"
