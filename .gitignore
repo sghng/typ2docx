@@ -3,6 +3,4 @@ Cargo.lock
 
 uv.lock
 
-*.marked
-*.pdf
-*.docx
+typ2docx.*
