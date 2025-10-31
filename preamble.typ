@@ -7,4 +7,3 @@
   [\@\@MATH#val\@\@]
   counter.update(val + 1)
 }
-
