@@ -44,6 +44,8 @@ def convert(
         result1 = future1.result()
         result2 = future2.result()
 
+    subprocess.run(["./merge.sh"])
+
 
 def branch1(path: Path):
     typ2pdf(path)
