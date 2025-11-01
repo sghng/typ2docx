@@ -1,7 +1,11 @@
 [project]
 name = "typ2docx"
 version = "0.1.0"
-dependencies = ["typer", "rich"]
+dependencies = ["typer"]
+requires-python = ">=3.8"
+
+[dependency-groups]
+dev = ["maturin"]
 
 [build-system]
 requires = ["maturin"]

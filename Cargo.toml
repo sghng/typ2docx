@@ -5,6 +5,7 @@ edition = "2024"
 
 [lib]
 name = "extract"
+path = "extract.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
