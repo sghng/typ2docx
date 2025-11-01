@@ -14,25 +14,24 @@
 
   <xsl:variable name="marker-pattern" select="'^@@MATH\d+@@$'"/>
 
-  <!-- Pre-index all block math markers for efficient lookup -->
-  <!-- w:p with exactly one w:r containing one w:t matching @@MATH\d+@@ -->
-  <xsl:variable name="block-markers-a" as="element(w:p)*">
-    <xsl:for-each select="$doc-a//w:p[
-      count(.//w:t) = 1 and
-      matches(.//w:t, $marker-pattern)
-    ]">
-      <xsl:sequence select="."/>
-    </xsl:for-each>
-  </xsl:variable>
+  <!-- Pre-index all block math markers -->
 
-  <xsl:variable name="block-markers-b" as="element(w:p)*">
-    <xsl:for-each select="$doc-b//w:p[
-      count(.//w:t) = 1 and
-      matches(.//w:t, $marker-pattern)
-    ]">
-      <xsl:sequence select="."/>
-    </xsl:for-each>
-  </xsl:variable>
+  <!--
+    In src document, opening markers may be in the same paragraph with pure text
+    equations
+  -->
+  <xsl:variable
+    name="block-markers-a"
+    as="element(w:p)*"
+    select="$doc-a//w:p[.//w:t[matches(string(.), $marker-pattern)]]"
+  />
+
+  <!-- w:p with exactly one w:r containing one w:t matching the pattern -->
+  <xsl:variable
+    name="block-markers-b"
+    as="element(w:p)*"
+    select="$doc-b//w:p[count(.//w:t) = 1 and matches(.//w:t, $marker-pattern)]"
+  />
 
   <xsl:variable name="block-math-paragraphs" as="element(w:p)*">
     <xsl:for-each select="$block-markers-b">
@@ -44,9 +43,6 @@
 
   <!-- dummy empty output to satisfy processor -->
   <xsl:template match="/">
-    <xsl:message>
-      <xsl:copy-of select="$block-math-paragraphs"/>
-    </xsl:message>
     <math-paragraphs>
       <xsl:copy-of select="$block-math-paragraphs"/>
     </math-paragraphs>
