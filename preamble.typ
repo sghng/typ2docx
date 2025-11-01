@@ -1,9 +1,8 @@
-#let _typ2docx_counter = state("_typ2docx_counter", 0)
+#let _typ2docx_counter = counter("_typ2docx_counter")
 #show math.equation: it => context {
-  let counter = _typ2docx_counter
-  let val = counter.get()
+  let val = _typ2docx_counter.display()
   [\@\@MATH#val\@\@]
   it
   [\@\@MATH#val\@\@]
-  counter.update(val + 1)
+  _typ2docx_counter.step()
 }
