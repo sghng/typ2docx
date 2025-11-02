@@ -8,11 +8,13 @@ on run argv
 
     tell application "System Events"
         set acrobatWasRunning to (exists process "AdobeAcrobat")
+        set previousApp to ¬
+            name of first application process whose frontmost is true
     end tell
 
     tell application "Adobe Acrobat"
-        activate
         open POSIX file pdfPath
+        activate
     end tell
 
     # File -> Export a PDF -> Microsoft Word -> Word Document
@@ -26,7 +28,7 @@ on run argv
                   menu item "Export a PDF" of ¬
                   menu "File" of ¬
                   menu bar 1
-            delay .8 # wait for the finder pop up
+            delay 1 # wait for the finder pop up
 
             set viewResultCheckbox to ¬
                 checkbox "View Result" of splitter group 1 of window 1
@@ -57,6 +59,10 @@ on run argv
             end tell
         end tell
     end if
+
+    tell application previousApp
+        activate
+    end tell
 
     return
 end run
