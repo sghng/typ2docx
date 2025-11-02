@@ -55,10 +55,7 @@ def branch1(path: Path):
 def branch2(path: Path):
     # construct source file
     eqs = extract_equations(str(path))
-    marked_eqs = []
-    for i, eq in enumerate(eqs):
-        marked_eqs.append(f"{marker(i)}{eq}{marker(i)}")
-    src = "\n\n".join(marked_eqs)
+    src = "\n\n".join(eqs)
     with open("typ2docx.b.typ", "w") as f:
         f.write(src)
 

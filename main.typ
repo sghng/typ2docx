@@ -1,12 +1,3 @@
-// #let _typ2docx_counter = counter("_typ2docx_counter")
-// #show math.equation: it => context {
-//   let val = _typ2docx_counter.display()
-//   _typ2docx_counter.step()
-//   [\@\@MATH#val\@\@]
-//   it
-//   [\@\@MATH#val\@\@]
-// }
-//
 #let eq = $ frac(pi, 2) $
 
 // block math
