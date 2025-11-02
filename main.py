@@ -44,6 +44,7 @@ def convert(
         result1 = future1.result()
         result2 = future2.result()
 
+    console.print("[bold green]Merging[/bold green] DOCX")
     subprocess.run(["./merge.sh"])
 
 
@@ -53,13 +54,16 @@ def branch1(path: Path):
 
 
 def branch2(path: Path):
+    console.print("[bold green]Extracting[/bold green] math source code")
     # construct source file
     eqs = extract_equations(str(path))
+    console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     src = "\n\n".join(eqs)
     with open("typ2docx.b.typ", "w") as f:
         f.write(src)
 
     # use pandoc to convert to DOCX
+    console.print("[bold green]Converting[/bold green] TYP -> DOCX with Pandoc")
     subprocess.run(["pandoc", "typ2docx.b.typ", "-o", "typ2docx.b.docx"])
 
 
@@ -68,6 +72,7 @@ def marker(i: int):
 
 
 def typ2pdf(path: Path):
+    console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
     marker_text = "INSERTED BY TYP2DOCX"
     preamble = [
         "// >>> " + marker_text,
@@ -98,10 +103,14 @@ def typ2pdf(path: Path):
 
 def pdf2docx(path: Path):
     # TODO: other engines
+    console.print("[bold green]Converting[/bold green] PDF -> DOCX with Acrobat")
     result = subprocess.run(["./acrobat.applescript"])
     if result.returncode != 0:
-        raise RuntimeError("Failed to convert pdf -> docx with Acrobat")
-    # sleep(1)  # for safety
+        console.print(
+            "[bold red]Error:[/bold red] "
+            + "Failed to convert pdf -> docx with Acrobat",
+        )
+        raise typer.Exit(1)
 
 
 def main():
