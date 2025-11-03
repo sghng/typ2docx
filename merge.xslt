@@ -10,10 +10,10 @@
   <xsl:variable name="doc-a" select="document('typ2docx.a.d/word/document.xml')"></xsl:variable>
   <xsl:variable name="doc-b" select="document('typ2docx.b.d/word/document.xml')"></xsl:variable>
 
-  <!-- Block math is the single m:oPara child of <w:p> -->
-  <xsl:variable name="math-block" as="element(w:p)*" select="$doc-b//w:p"/>
-  <!-- Inline math is a <m:oMath> child of <w:p> (there can be several) -->
-  <xsl:variable name="math-inline" as="element(m:oMath)*" select="$doc-b//w:p/m:oMath"/>
+  <!-- Block math paragraphs contain m:oMathPara -->
+  <xsl:variable name="math-block" as="element(w:p)*" select="$doc-b//w:p[m:oMathPara]"/>
+  <!-- Inline math is a <m:oMath> child of <w:p> (there can be several), but not in m:oMathPara -->
+  <xsl:variable name="math-inline" as="element(m:oMath)*" select="$doc-b//w:p/m:oMath[not(parent::m:oMathPara)]"/>
 
   <!--
     Inline math can look exactly like a block marker in its own paragraph.
@@ -38,6 +38,20 @@
     <xsl:param name="t" as="element(w:t)"/>
     <xsl:sequence select="matches($t, $marker-inline)"/>
   </xsl:function>
+  
+  <!-- Tokenize text by splitting on inline markers, returning marker positions -->
+  <xsl:function name="local:tokenize-inline-text" as="xs:string*">
+    <xsl:param name="text" as="xs:string"/>
+    <xsl:variable name="pattern" select="'@@MATH:INLINE:\d+@@'"/>
+    <xsl:analyze-string select="$text" regex="({$pattern})">
+      <xsl:matching-substring>
+        <xsl:value-of select="."/>
+      </xsl:matching-substring>
+      <xsl:non-matching-substring>
+        <xsl:value-of select="."/>
+      </xsl:non-matching-substring>
+    </xsl:analyze-string>
+  </xsl:function>
 
   <!-- Identity template that copies everything by default. Lowest specificity -->
   <xsl:template match="@*|node()">
@@ -51,30 +65,64 @@
     <xsl:apply-templates select="$doc-a/w:document"/>
   </xsl:template>
 
-  <!-- Accumulators to track the index. Regular variables are immutable.-->
-  <xsl:accumulator name="index-block" as="xs:integer" initial-value="0">
-    <xsl:accumulator-rule match="w:p[local:is-block(.)]" select="$value + 1"/>
-  </xsl:accumulator>
-  <xsl:accumulator name="index-inline" as="xs:integer" initial-value="0">
-    <xsl:accumulator-rule match="w:t[local:is-inline(.)]" select="$value + 1"/>
-  </xsl:accumulator>
-
   <!-- If it's block marker paragraph, we replace it with the actual math paragraph. -->
   <xsl:template match="w:p[local:is-block(.)]">
-    <xsl:variable name="index" select="accumulator-after('index-block')"/>
-    <xsl:copy-of select="$math-block[$index]"/>
+    <xsl:variable name="marker-num" select="local:extract-marker-number(string(.//w:t))"/>
+    <xsl:copy-of select="$math-block[$marker-num + 1]"/>
   </xsl:template>
 
-  <!-- When inline math marker takes the whole run, we replace that run with m:oMath. -->
-  <xsl:template match="w:r[count(w:t) = 1 and w:t[local:is-inline(.)]]">
-    <xsl:variable name="index" select="accumulator-after('index-inline')"/>
-    <xsl:copy-of select="$math-inline[$index]"/>
-  </xsl:template>
+  <!-- Extract marker number from marker text (works for both BLOCK and INLINE) -->
+  <xsl:function name="local:extract-marker-number" as="xs:integer">
+    <xsl:param name="marker" as="xs:string"/>
+    <xsl:sequence select="xs:integer(replace($marker, '^@@MATH:(?:BLOCK|INLINE):(\d+)@@$', '$1'))"/>
+  </xsl:function>
 
-  <!-- TODO: handle multiple inline markers in the same run -->
-  <!--
-    If it's not in its own run, we need to split that run from the marker, and
-   insert w:oMath between the two separated runs.
-  -->
+  <!-- Handle w:r elements that contain inline markers -->
+  <xsl:template match="w:r[w:t[matches(., '@@MATH:INLINE:\d+@@')]]">
+    <xsl:variable name="rPr" select="w:rPr"/>
+    <xsl:for-each select="w:t">
+      <xsl:variable name="t" select="."/>
+      <xsl:choose>
+        <xsl:when test="matches(normalize-space($t), $marker-inline)">
+          <!-- This w:t contains only a marker (normalized), output math -->
+          <xsl:variable name="marker-num" select="local:extract-marker-number(normalize-space($t))"/>
+          <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
+        </xsl:when>
+        <xsl:when test="matches($t, '@@MATH:INLINE:\d+@@')">
+          <!-- This w:t contains markers mixed with other text, tokenize it -->
+          <xsl:variable name="tokens" select="local:tokenize-inline-text(string($t))"/>
+          <xsl:for-each select="$tokens">
+            <xsl:variable name="token" select="."/>
+            <xsl:choose>
+              <xsl:when test="matches($token, $marker-inline)">
+                <!-- This is a marker, extract its number and output math -->
+                <xsl:variable name="marker-num" select="local:extract-marker-number($token)"/>
+                <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <!-- Regular text, create new w:r if token is not empty -->
+                <xsl:if test="normalize-space($token) ne ''">
+                  <xsl:element name="w:r">
+                    <xsl:copy-of select="$rPr"/>
+                    <xsl:element name="w:t">
+                      <xsl:copy-of select="$t/@*"/>
+                      <xsl:value-of select="$token"/>
+                    </xsl:element>
+                  </xsl:element>
+                </xsl:if>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:for-each>
+        </xsl:when>
+        <xsl:otherwise>
+          <!-- This w:t doesn't contain markers, just copy it in a new w:r -->
+          <xsl:element name="w:r">
+            <xsl:copy-of select="$rPr"/>
+            <xsl:copy-of select="$t"/>
+          </xsl:element>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:for-each>
+  </xsl:template>
 
 </xsl:stylesheet>
