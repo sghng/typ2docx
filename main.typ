@@ -20,12 +20,16 @@ $ Gamma(z) = integral_0^infinity t^{z-1}e^(-t) d t $
 
 $ "pure text block math" $
 
-#lorem(20)
+#lorem(20) Empty block math follows:
 
-$$ // empty block math
+$$ // considered block math
 
 // inline math
 
 #lorem(10) $frac(pi, 2)$ #lorem(5) $sum_(i=1)^K$ #lorem(5)
 text$"no space inline math"$text $"pure text inline math"$
 $k$-means
+
+$pi$ // inline math on its own paragraph
+
+empty inline math $$ emtpy.
