@@ -55,13 +55,12 @@ def branch1(path: Path):
 
 def branch2(path: Path):
     console.print("[bold green]Extracting[/bold green] math source code")
-    # construct source file
-    eqs = extract_equations(str(path))
+    # construct source file, empty equations are omitted
+    eqs = [eq for eq in extract_equations(str(path)) if eq[1:-1].strip()]
     console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     src = "\n\n".join(eqs)
     with open("typ2docx.b.typ", "w") as f:
         f.write(src)
-
     # use pandoc to convert to DOCX
     console.print("[bold green]Converting[/bold green] TYP -> DOCX with Pandoc")
     subprocess.run(["pandoc", "typ2docx.b.typ", "-o", "typ2docx.b.docx"])
