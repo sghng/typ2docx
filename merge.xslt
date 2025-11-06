@@ -6,9 +6,9 @@
   xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
   xmlns:local="local"
 >
-  <!-- TODO: pass real paths -->
-  <xsl:variable name="doc-a" select="document('typ2docx.a.d/word/document.xml')"></xsl:variable>
-  <xsl:variable name="doc-b" select="document('typ2docx.b.d/word/document.xml')"></xsl:variable>
+  <!-- Document paths are relative to the stylesheet location (base_dir) -->
+  <xsl:variable name="doc-a" select="document('a.d/word/document.xml')"></xsl:variable>
+  <xsl:variable name="doc-b" select="document('b.d/word/document.xml')"></xsl:variable>
 
   <!-- Block math paragraphs contain m:oMathPara -->
   <xsl:variable name="math-block" as="element(w:p)*" select="$doc-b//w:p[m:oMathPara]"/>
@@ -38,7 +38,7 @@
     <xsl:param name="t" as="element(w:t)"/>
     <xsl:sequence select="matches($t, $marker-inline)"/>
   </xsl:function>
-  
+
   <!-- Tokenize text by splitting on inline markers, returning marker positions -->
   <xsl:function name="local:tokenize-inline-text" as="xs:string*">
     <xsl:param name="text" as="xs:string"/>
@@ -53,16 +53,16 @@
     </xsl:analyze-string>
   </xsl:function>
 
+  <!-- Direct processor to process doc-a, the entry point -->
+  <xsl:template name="main" match="/">
+    <xsl:apply-templates select="$doc-a/w:document"/>
+  </xsl:template>
+
   <!-- Identity template that copies everything by default. Lowest specificity -->
   <xsl:template match="@*|node()">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
-  </xsl:template>
-
-  <!-- Direct processor to process doc-a -->
-  <xsl:template match="/">
-    <xsl:apply-templates select="$doc-a/w:document"/>
   </xsl:template>
 
   <!-- If it's block marker paragraph, we replace it with the actual math paragraph. -->

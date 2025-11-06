@@ -1,10 +1,6 @@
 #!/usr/bin/osascript
 on run argv
-    if (count of argv) > 0 then
-        set pdfPath to item 1 of argv
-    else
-        set pdfPath to "/Users/sghuang/dev/typ2docx/typ2docx.a.pdf"
-    end if
+    set pdfPath to item 1 of argv # path must be passed
 
     tell application "System Events"
         set acrobatWasRunning to (exists process "AdobeAcrobat")

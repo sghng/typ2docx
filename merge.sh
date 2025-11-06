@@ -1,12 +1,11 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
+set -e
 
-unzip -o -q typ2docx.a.docx -d typ2docx.a.d
-unzip -o -q typ2docx.b.docx -d typ2docx.b.d
-rsync -a --delete typ2docx.a.d/ typ2docx.out.d/
+unzip -o -q a.docx -d a.d
+unzip -o -q b.docx -d b.d
+rsync -a --delete a.d/ out.d/
 
-# dummy input/output
-saxon -s:empty.xml -xsl:merge.xslt -o:typ2docx.out.d/word/document.xml
+saxon -xsl:merge.xslt -it:main -o:out.d/word/document.xml
 
-cd typ2docx.out.d # must be zipped from inside!
-zip -r -q ../typ2docx.out.docx *
+cd out.d # must be zipped from inside!
+zip -r -q ../out.docx *

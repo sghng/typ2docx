@@ -4,9 +4,18 @@ version = "0.1.0"
 dependencies = ["typer"]
 requires-python = ">=3.8"
 
-[dependency-groups]
-dev = ["maturin"]
+[project.scripts]
+typ2docx = "main:app"
 
 [build-system]
-requires = ["maturin"]
+requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
+
+[tool.maturin]
+include = [
+  "acrobat.applescript",
+  "main.py",
+  "merge.sh",
+  "merge.xslt",
+  "preamble.typ",
+]
