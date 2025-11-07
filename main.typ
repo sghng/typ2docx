@@ -33,3 +33,5 @@ $k$-means
 $pi$ // inline math on its own paragraph
 
 empty inline math $$ emtpy.
+
+text #text(fill: red)[some text, and a $"equation" sum$, and more text] text

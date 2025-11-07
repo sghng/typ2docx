@@ -1,5 +1,5 @@
 clean:
-    rm -rf target/ typ2docx.* *.docx *.pdf *.xml uv.lock Cargo.lock
+    rm -rf *.docx *.pdf *.xml
 
 pack-docx DIR OUTPUT:
     cd "{{DIR}}" && zip -r -q "../{{OUTPUT}}" *

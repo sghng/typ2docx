@@ -12,14 +12,14 @@ from rich.console import Console
 from rich.json import JSON
 from typer import Argument, Exit, Option, Typer
 
-HERE = Path(__file__).parent
+HERE: Path = Path(__file__).parent
 app = Typer(
     name="typ2docx",
     help="Converting Typst project to DOCX format.",
     rich_markup_mode="rich",
 )
 console = Console()
-DIR = Path.cwd() / ".typ2docx/"
+DIR: Path = Path.cwd() / ".typ2docx/"
 INPUT: Path
 OUTPUT: Path
 DEBUG: bool = False
@@ -91,9 +91,7 @@ def branch1():
 
 
 def branch2():
-    """Typst -- Pandoc -> DOCX"""
-    # use pandoc to convert to DOCX
-    console.print("[bold green]Converting[/bold green] TYP -> DOCX with Pandoc")
+    """Typst -- Math Extracted -> Typst -- Pandoc -> DOCX"""
     typ2typ()
     typ2docx()
 
@@ -159,6 +157,7 @@ def typ2typ():
 
 def typ2docx():
     """Typst to DOCX (with Pandoc, math only)"""
+    console.print("[bold green]Converting[/bold green] TYP -> DOCX with Pandoc")
     try:
         run(["pandoc", "b.typ", "-o", "b.docx"], cwd=DIR, check=True)
     except CalledProcessError:
