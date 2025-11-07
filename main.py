@@ -58,6 +58,7 @@ def convert(
     debug: bool = Option(
         False,
         "--debug",
+        "-d",
         help="Keep intermediate files in working directory for inspection.",
     ),
 ):
@@ -98,34 +99,17 @@ def branch2():
 
 def typ2pdf():
     console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
-    marker_text = "INSERTED BY TYP2DOCX"
-    preamble = [
-        "// >>> " + marker_text,
-        (HERE / "preamble.typ").read_text().rstrip(),
-        "// <<< " + marker_text,
-        "",
-    ]
-    preamble = "\n".join(preamble)
-    src = INPUT.read_text()
-
     try:
-        INPUT.write_text(preamble + src)  # insert preamble in place
-        run(["typst", "compile", INPUT, DIR / "a.pdf"], check=True)
-    except CalledProcessError:
-        console.print(
-            "[bold red]Error:[/bold red] " + "Failed to compile TYP to PDF",
+        run(
+            ["typst", "compile", "-", DIR / "a.pdf"],
+            cwd=INPUT.parent,
+            text=True,
+            input=(HERE / "preamble.typ").read_text() + INPUT.read_text(),
+            check=True,
         )
+    except CalledProcessError:
+        console.print("[bold red]Error:[/bold red] Failed to compile TYP to PDF")
         raise Exit(1)
-    finally:
-        # cleanup inserted preamble
-        src = INPUT.read_text()
-        start = src.find("// >>> " + marker_text)
-        end = src.find("// <<< " + marker_text)
-        if start != -1 and end != -1:
-            end += len("// <<< " + marker_text)
-            cleaned = src[:start] + src[end:]
-            cleaned = cleaned.lstrip()
-            INPUT.write_text(cleaned)
 
 
 def pdf2docx():
@@ -139,8 +123,7 @@ def pdf2docx():
         )
     except CalledProcessError:
         console.print(
-            "[bold red]Error:[/bold red] "
-            + "Failed to convert PDF -> DOCX with Acrobat",
+            "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX with Acrobat",
         )
         raise Exit(1)
 
@@ -162,8 +145,7 @@ def typ2docx():
         run(["pandoc", "b.typ", "-o", "b.docx"], cwd=DIR, check=True)
     except CalledProcessError:
         console.print(
-            "[bold red]Error:[/bold red] "
-            + "Failed to convert Typst to DOCX with Pandoc."
+            "[bold red]Error:[/bold red] Failed to convert Typst to DOCX with Pandoc"
         )
         raise Exit(1)
 
@@ -174,9 +156,7 @@ def docx2docx():
     try:
         run(["sh", HERE / "merge.sh"], cwd=DIR, check=True)
     except CalledProcessError:
-        console.print(
-            "[bold red]Error:[/bold red] " + "Failed to merge DOCX with Saxon"
-        )
+        console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)
 
 
