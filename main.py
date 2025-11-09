@@ -7,7 +7,7 @@ from subprocess import CalledProcessError, run
 from tempfile import TemporaryDirectory
 from typing import Annotated, Optional
 
-from extract import extract as extract_equations  # ty: ignore[unresolved-import]
+from extract import extract  # ty: ignore[unresolved-import]
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
@@ -122,9 +122,18 @@ def pdf2docx():
 def typ2typ():
     """Typst to Typst (math only)"""
     console.print("[bold green]Extracting[/bold green] math source code")
-    # construct source file, empty equations are omitted
-    eqs = [eq for eq in extract_equations(str(INPUT)) if eq[1:-1].strip()]
+    try:
+        eqs: list[str] = extract(INPUT)
+    except BaseException as e:  # PanicException is derived from BaseException
+        if type(e).__module__ != "pyo3_runtime" or type(e).__name__ != "PanicException":
+            raise e
+        console.print(
+            "[bold red]Error:[/bold red] "
+            + "Failed to extract equations, make sure the Typst project compiles."
+        )
+        raise Exit(1)
     console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
+    eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted
     src = "\n\n".join(eqs)
     (DIR / "b.typ").write_text(src)
 

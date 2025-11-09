@@ -35,19 +35,16 @@ fn extract_equations(path: &str) -> Vec<String> {
         Route::default().track(),
         &world.source(world.main()).unwrap(),
     )
-    .unwrap()
+    .expect("the project should compile successfully")
     .content();
     let mut equations: Vec<String> = Vec::new();
     let _ = content.traverse(&mut |elem: Content| -> ControlFlow<()> {
         if let Some(_) = elem.to_packed::<EquationElem>() {
             let span = elem.span();
-            if let Some(file_id) = span.id() {
-                if let Ok(source) = world.source(file_id) {
-                    if let Some(range) = source.range(span) {
-                        equations.push(source.text()[range].to_string());
-                    }
-                }
-            }
+            let file_id = span.id().unwrap();
+            let source = world.source(file_id).unwrap();
+            let range = source.range(span).unwrap();
+            equations.push(source.text()[range].to_string());
         }
         ControlFlow::Continue(())
     });
@@ -65,7 +62,7 @@ struct SimpleWorld {
 
 impl SimpleWorld {
     fn new(path: &Path) -> Self {
-        let path = path.canonicalize().unwrap();
+        let path = path.canonicalize().expect("the path should be valid");
         let root = path.parent().unwrap().canonicalize().unwrap();
         let main = FileId::new(None, VirtualPath::within_root(&path, &root).unwrap());
         let files = Mutex::new(HashMap::new());
