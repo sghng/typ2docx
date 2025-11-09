@@ -3,6 +3,28 @@ name = "typ2docx"
 version = "0.1.0"
 dependencies = ["typer"]
 requires-python = ">=3.8"
+authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]
+description = "A tool to convert Typst project to Microsoft Word format."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["Typst", "docx", "converter", "Microsoft Word"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Environment :: MacOS X",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Other Scripting Engines",
+  "Programming Language :: Rust",
+  "Topic :: File Formats",
+  "Topic :: Text Processing :: Markup",
+  "Topic :: Text Editors :: Word Processors",
+]
+
+[project.urls]
+Repository = "https://github.com/sghng/typ2docx"
+Issues = "https://github.com/sghng/typ2docx/issues"
 
 [project.scripts]
 typ2docx = "main:app"
