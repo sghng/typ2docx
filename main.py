@@ -1,22 +1,20 @@
 #! /usr/bin/env python3
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from json import dumps
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError, run
 from tempfile import TemporaryDirectory
+from typing import Annotated, Optional
 
 from extract import extract as extract_equations  # ty: ignore[unresolved-import]
 from rich.console import Console
-from rich.json import JSON
 from typer import Argument, Exit, Option, Typer
 
 HERE: Path = Path(__file__).parent
 app = Typer(
     name="typ2docx",
     help="Converting Typst project to DOCX format.",
-    rich_markup_mode="rich",
 )
 console = Console()
 DIR: Path = Path.cwd() / ".typ2docx/"
@@ -38,34 +36,27 @@ def WorkDirectory():
 
 
 @app.command()
-def extract(
-    path: str = Argument(help="Entry point to the Typst project"),
-):
-    """Extract equations from a Typst project and serialize them to JSON."""
-    equations = extract_equations(path)
-    console.print(JSON(dumps(equations)))
-
-
-@app.command()
-def convert(
-    input: str = Argument(help="Entry point to the Typst project"),
-    output: str = Option(
-        None,
-        "--output",
-        "-o",
-        help="Output DOCX file path. Defaults to input filename with .docx extension.",
-    ),
-    debug: bool = Option(
-        False,
-        "--debug",
-        "-d",
-        help="Keep intermediate files in working directory for inspection.",
-    ),
+def main(
+    input: Annotated[Path, Argument(help="Entry point to the Typst project")],
+    output: Annotated[
+        Optional[Path],
+        Option(
+            "-o",
+            help="Output DOCX file path. Defaults to input filename with .docx extension.",
+        ),
+    ] = None,
+    debug: Annotated[
+        bool,
+        Option(
+            "-d",
+            help="Keep intermediate files in working directory for inspection.",
+        ),
+    ] = False,
 ):
     """Convert a Typst project to DOCX format."""
     global INPUT, OUTPUT, DEBUG
-    INPUT = Path(input)
-    OUTPUT = Path(output) if output else Path.cwd() / f"{INPUT.stem}.docx"
+    INPUT = input
+    OUTPUT = output or Path.cwd() / f"{INPUT.stem}.docx"
     DEBUG = debug
 
     console.print(f"[bold blue]Converting[/bold blue] {INPUT}...")
