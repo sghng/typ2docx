@@ -1,5 +1,5 @@
 clean:
-    rm -rf *.docx *.pdf *.xml
+    rm -rf *.docx *.pdf *.xml __pycache__/ dist/ target/ .typ2docx/
 
 pack-docx DIR OUTPUT:
     cd "{{DIR}}" && zip -r -q "../{{OUTPUT}}" *

@@ -1,4 +1,4 @@
-# `typ2docx`: Converting Your Typst Project to Microsoft Word Format
+# `typ2docx`: Converting Typst Project to Microsoft Word Format
 
 `typ2docx` is a command line tool that converts a Typst project to Microsoft
 Word `.docx` format, with tables, cross-references, most of the styles, and most
@@ -30,17 +30,12 @@ To install `typ2docx`, execute the following command:
 uv tool install typ2docx
 ```
 
-Or, to use it without installing, simply run:
-
-```sh
-uvx typ2docx
-```
-
-If you need to modify this program:
+If you want to tinker with this program:
 
 ```sh
 git clone git@github.com:sghng/typ2docx.git
 cd typ2docx
+# do your modifications...
 uv tool install .
 ```
 
@@ -48,19 +43,20 @@ For more details, read
 [UV's guide on using tools](https://docs.astral.sh/uv/guides/tools/). You may
 also use `pipx` or other similar tools to install and run this program.
 
-The following runtime dependencies are also required, their executables must be
-available in `PATH`.
+The following runtime dependencies are also required:
 
 - [Pandoc](https://pandoc.org/), a universal document converter.
 - [Saxon](https://www.saxonica.com/), a processor for
   [XSLT 3.0](https://www.w3.org/TR/xslt-30/). The free home edition would
   suffice.
+- [Adobe Acrobat](https://acrobat.adobe.com) desktop app for converting PDF to
+  `.docx`. Either the free `Acrobat Reader` or the paid `Acrobat Pro` works.
 
 For macOS users, it is recommended to install these dependencies via
 [Homebrew](https://brew.sh/) with the following command:
 
 ```sh
-brew install pandoc saxon
+brew install pandoc saxon adobe-acrobat-reader
 ```
 
 ## Usage
@@ -72,7 +68,7 @@ Typst project to convert it into Microsoft Word `.docx` format.
 typ2docx main.typ
 ```
 
-Run `typ2docx` to see the help info on how to use this tool.
+Run `typ2docx --help` to see the help info on how to use this tool.
 
 ## What It Does and Does Not
 
