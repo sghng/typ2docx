@@ -110,9 +110,11 @@ def typ2pdf():
 
 
 def pdf2docx():
-    console.print("[bold green]Converting[/bold green] PDF -> DOCX")
     match ENGINE:
         case "pdfservices":
+            console.print(
+                "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDFServices API"
+            )
             try:
                 export(DIR / "a.pdf")
             except ValueError:
@@ -129,6 +131,9 @@ def pdf2docx():
                 )
                 raise Exit(1)
         case "acrobat":
+            console.print(
+                "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
+            )
             try:
                 run(
                     ["osascript", HERE / "acrobat.applescript", DIR / "a.pdf"],
@@ -173,7 +178,7 @@ def typ2docx():
         run(["pandoc", "b.typ", "-o", "b.docx"], cwd=DIR, check=True)
     except CalledProcessError:
         console.print(
-            "[bold red]Error:[/bold red] Failed to convert Typst to DOCX with Pandoc"
+            "[bold red]Error:[/bold red] Failed to convert Typst -> DOCX with Pandoc"
         )
         raise Exit(1)
 
