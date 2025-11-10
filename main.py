@@ -69,7 +69,7 @@ def main(
     global INPUT, OUTPUT, DEBUG, ENGINE
     INPUT, OUTPUT, ENGINE, DEBUG = (
         input,
-        output or Path.cwd() / f"{INPUT.stem}.docx",
+        output or Path.cwd() / f"{input.stem}.docx",
         engine,
         debug,
     )
@@ -149,7 +149,7 @@ def typ2typ():
     """Typst to Typst (math only)"""
     console.print("[bold green]Extracting[/bold green] math source code")
     try:
-        eqs: list[str] = extract(INPUT)
+        eqs: list[str] = extract(str(INPUT))
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             console.print(
