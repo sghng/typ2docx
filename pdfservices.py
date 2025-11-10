@@ -1,5 +1,6 @@
 from os import getenv
 from pathlib import Path
+from typing import Optional
 
 from adobe.pdfservices.operation.auth.service_principal_credentials import (
     ServicePrincipalCredentials,
@@ -21,11 +22,9 @@ from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_target_for
 from adobe.pdfservices.operation.pdfjobs.result.export_pdf_result import ExportPDFResult
 
 
-def export(input: Path):
-    if not (client_id := getenv("PDF_SERVICES_CLIENT_ID")):
-        raise ValueError("PDF_SERVICES_CLIENT_ID env var is not set.")
-    if not (client_secret := getenv("PDF_SERVICES_CLIENT_SECRET")):
-        raise ValueError("PDF_SERVICES_CLIENT_SECRET env var is not set.")
+def export(input: Path, output: Optional[Path] = None):
+    client_id = getenv("PDF_SERVICES_CLIENT_ID")
+    client_secret = getenv("PDF_SERVICES_CLIENT_SECRET")
 
     try:
         credentials = ServicePrincipalCredentials(client_id, client_secret)
@@ -43,11 +42,12 @@ def export(input: Path):
         result_asset = response.get_result().get_asset()
         output_stream = service.get_content(result_asset)
 
-        with open("result.docx", "wb") as file:
+        output = output or Path(f"{input.stem}.docx")
+        with open(output, "wb") as file:
             file.write(output_stream.get_input_stream())
 
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
-        raise RuntimeError(f"Adobe PDF Services API encountered an error: {e}") from e
+        raise RuntimeError(f"Adobe PDFServices API encountered an error: {e}") from e
 
 
 if __name__ == "__main__":
