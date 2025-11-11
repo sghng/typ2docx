@@ -61,7 +61,7 @@ def export(input: Path, output: Path | None = None) -> None:
         result_asset = response.get_result().get_asset()
         output_stream = service.get_content(result_asset)
 
-        output = output or Path(f"{input.stem}.docx")
+        output = output or input.with_suffix(".docx")
         with open(output, "wb") as f:
             f.write(output_stream.get_input_stream())
 
