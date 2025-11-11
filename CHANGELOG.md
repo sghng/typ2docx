@@ -2,7 +2,7 @@
 
 ## [0.2.0] - 2025-11-11
 
-[0.2.0]: https://github.com/sghng/typ2docx/releases/compare/v0.1.0...v0.2.0
+[0.2.0]: https://github.com/sghng/typ2docx/compare/v0.1.0...v0.2.0
 
 ### Added
 
