@@ -123,7 +123,7 @@ def typ2typ():
     """Typst to Typst (math only)"""
     console.print("[bold green]Extracting[/bold green] math source code")
     try:
-        eqs: list[str] = extract(INPUT)
+        eqs: list[str] = extract(str(INPUT))
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__module__ != "pyo3_runtime" or type(e).__name__ != "PanicException":
             raise e
@@ -154,7 +154,18 @@ def docx2docx():
     # Saxon evaluates path relative to the xsl, must be copied
     copy2(HERE / "merge.xslt", DIR / "merge.xslt")
     try:
-        run(["sh", HERE / "merge.sh"], cwd=DIR, check=True)
+        from saxonche import PySaxonProcessor
+
+        proc = PySaxonProcessor()
+        xsltproc = proc.new_xslt30_processor()
+        document = proc.parse_xml(
+            xml_text="<doc><item>text1</item><item>text2</item><item>text3</item></doc>"
+        )
+        executable = xsltproc.compile_stylesheet(stylesheet_file="test.xsl")
+        output = executable.transform_to_string(xdm_node=document)
+        print(output)
+
+        # run(["sh", HERE / "merge.sh"], cwd=DIR, check=True)
     except CalledProcessError:
         console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)

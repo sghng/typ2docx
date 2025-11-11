@@ -1,7 +1,7 @@
 [project]
 name = "typ2docx"
 version = "0.1.0"
-dependencies = ["typer"]
+dependencies = ["saxonche", "typer"]
 requires-python = ">=3.8"
 authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]
 description = "A tool to convert Typst project to Microsoft Word format."
@@ -30,7 +30,7 @@ Issues = "https://github.com/sghng/typ2docx/issues"
 typ2docx = "main:app"
 
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
+requires = ["maturin>=1,<2"]
 build-backend = "maturin"
 
 [tool.maturin]
