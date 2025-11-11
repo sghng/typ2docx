@@ -15,7 +15,7 @@ publication, please consider crediting this project or sponsoring me :heart:.
 
 > [!NOTE]
 >
-> Currently this tools only supports macOS and Linux system, as it requires a
+> Currently this tool only supports macOS and Linux systems, as it requires a
 > `bash` script and some cli dependencies!
 
 ### Prerequisite
@@ -100,8 +100,8 @@ there are two supported engines:
 
 - **[Adobe Acrobat](https://acrobat.adobe.com)**: Pass `-e acrobat` to use this
   engine. It uses Acrobat desktop app with some GUI automation to export a PDF
-  to `.docx`. Either the free Acrobat Reader and the paid Acrobat Pro would
-  work. This is only supported on macOS now.
+  to `.docx`. Either the free Acrobat Reader or the paid Acrobat Pro would work.
+  This is only supported on macOS now.
 - **[Adobe PDFServices API](https://developer.adobe.com/document-services/apis/pdf-services/)**:
   Pass `-e pdfservices` to use this engine. It requires internet connection and
   valid PDFServices API credentials. This service comes with 500 free

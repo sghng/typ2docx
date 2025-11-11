@@ -53,7 +53,8 @@ def main(
         Option(
             "-o",
             "--output",
-            help="Output DOCX file path. Defaults to input filename with .docx extension.",
+            help="Output DOCX file path. "
+            "Defaults to input filename with .docx extension.",
         ),
     ] = None,
     debug: Annotated[
@@ -77,7 +78,8 @@ def main(
     console.print(f"[bold blue]Converting[/bold blue] {INPUT}...")
     if debug:
         console.print(
-            "[yellow]Debug mode:[/yellow] Intermediate files will be kept in ./.typ2docx/"
+            "[yellow]Debug mode:[/yellow] "
+            "Intermediate files will be kept in ./.typ2docx/"
         )
 
     with WorkDirectory():
@@ -113,21 +115,22 @@ def pdf2docx():
     match ENGINE:
         case "pdfservices":
             console.print(
-                "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDFServices API"
+                "[bold green]Converting[/bold green] "
+                "PDF -> DOCX with Adobe PDFServices API"
             )
             try:
                 export(DIR / "a.pdf")
             except ValueError:
                 console.print(
                     "[bold red]Error:[/bold red] Make sure you have "
-                    + "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
-                    + "set in environment!",
+                    "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
+                    "set in environment!",
                 )
                 raise Exit(1)
             except RuntimeError as e:
                 console.print(
-                    "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX"
-                    + f"with Adobe PDFServices API: {e}"
+                    "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX "
+                    f"with Adobe PDFServices API: {e}"
                 )
                 raise Exit(1)
         case "acrobat":
@@ -143,7 +146,7 @@ def pdf2docx():
             except CalledProcessError:
                 console.print(
                     "[bold red]Error:[/bold red] "
-                    + "Failed to convert PDF -> DOCX with Acrobat"
+                    "Failed to convert PDF -> DOCX with Acrobat"
                 )
                 raise Exit(1)
         case _:
@@ -159,7 +162,7 @@ def typ2typ():
         if type(e).__name__ == "PanicException":
             console.print(
                 "[bold red]Error:[/bold red] "
-                + "Failed to extract equations, make sure the Typst project compiles."
+                "Failed to extract equations, make sure the Typst project compiles."
             )
             raise Exit(1)
         else:

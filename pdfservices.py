@@ -1,6 +1,5 @@
-from os import getenv
+from os import environ
 from pathlib import Path
-from typing import Optional
 
 from adobe.pdfservices.operation.auth.service_principal_credentials import (
     ServicePrincipalCredentials,
@@ -22,9 +21,29 @@ from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_target_for
 from adobe.pdfservices.operation.pdfjobs.result.export_pdf_result import ExportPDFResult
 
 
-def export(input: Path, output: Optional[Path] = None):
-    client_id = getenv("PDF_SERVICES_CLIENT_ID")
-    client_secret = getenv("PDF_SERVICES_CLIENT_SECRET")
+def export(input: Path, output: Path | None = None) -> None:
+    """
+    Export a PDF file to DOCX format using Adobe PDFServices API.
+
+    Args:
+        input: Path to the input PDF file.
+        output: Optional path for the output DOCX file. Defaults to input
+            filename with .docx extension.
+
+    Raises:
+        ValueError: If PDF_SERVICES_CLIENT_ID or PDF_SERVICES_CLIENT_SECRET
+            are not set.
+        RuntimeError: If the Adobe PDFServices API encounters an error.
+    """
+
+    try:
+        client_id = environ["PDF_SERVICES_CLIENT_ID"]
+        client_secret = environ["PDF_SERVICES_CLIENT_SECRET"]
+    except KeyError:
+        raise ValueError(
+            "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
+            "must be set in the environment"
+        )
 
     try:
         credentials = ServicePrincipalCredentials(client_id, client_secret)
@@ -43,8 +62,8 @@ def export(input: Path, output: Optional[Path] = None):
         output_stream = service.get_content(result_asset)
 
         output = output or Path(f"{input.stem}.docx")
-        with open(output, "wb") as file:
-            file.write(output_stream.get_input_stream())
+        with open(output, "wb") as f:
+            f.write(output_stream.get_input_stream())
 
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
         raise RuntimeError(f"Adobe PDFServices API encountered an error: {e}") from e
