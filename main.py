@@ -70,7 +70,7 @@ def main(
     global INPUT, OUTPUT, DEBUG, ENGINE
     INPUT, OUTPUT, ENGINE, DEBUG = (
         input,
-        output or (Path.cwd() / input.name).with_suffix(".docx"),
+        output or Path.cwd() / input.with_suffix(".docx").name,
         engine,
         debug,
     )
