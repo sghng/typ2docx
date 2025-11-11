@@ -1,8 +1,8 @@
 [project]
 name = "typ2docx"
 version = "0.1.0"
-dependencies = ["typer"]
-requires-python = ">=3.8"
+dependencies = ["pdfservices-sdk>=4.0", "rich", "typer"]
+requires-python = ">=3.10"
 authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]
 description = "A tool to convert Typst project to Microsoft Word format."
 readme = "README.md"
@@ -10,9 +10,8 @@ license = "MIT"
 license-files = ["LICENSE"]
 keywords = ["Typst", "docx", "converter", "Microsoft Word"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Environment :: Console",
-  "Environment :: MacOS X",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Other Scripting Engines",
@@ -39,5 +38,6 @@ include = [
   "main.py",
   "merge.sh",
   "merge.xslt",
+  "pdfservices.py",
   "preamble.typ",
 ]

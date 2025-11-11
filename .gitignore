@@ -1,3 +1,7 @@
+.idea/
+
+.env
+
 target/
 Cargo.lock
 
