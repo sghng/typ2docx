@@ -6,4 +6,4 @@ from pathlib import Path
 def TempFile(path: Path, content: str = ""):
     path.write_text(content)
     yield path
-    path.unlink()
+    path.unlink(missing_ok=True)
