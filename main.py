@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError, run
+from sys import argv
 from tempfile import TemporaryDirectory
 from typing import Annotated, Literal, Optional
 
@@ -26,6 +27,7 @@ INPUT: Path
 OUTPUT: Path
 ENGINE: str
 DEBUG: bool
+TYPST_OPTS: list[str]
 
 
 @contextmanager
@@ -65,8 +67,17 @@ def main(
             help="Keep intermediate files in working directory for inspection.",
         ),
     ] = False,
+    # defined here, handled in main
+    typst_opts: Annotated[
+        list[str],
+        Argument(
+            help="Options forwarded to the Typst compiler (must follow --).",
+            metavar="[-- TYPST_OPT...]",
+        ),
+    ] = [],
 ):
     """Convert a Typst project to DOCX format."""
+
     global INPUT, OUTPUT, DEBUG, ENGINE
     INPUT, OUTPUT, ENGINE, DEBUG = (
         input,
@@ -98,7 +109,7 @@ def typ2pdf():
     console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
     try:
         run(
-            ["typst", "compile", "-", DIR / "a.pdf"],
+            ["typst", "compile", *TYPST_OPTS, "-", DIR / "a.pdf"],
             cwd=INPUT.parent,
             text=True,
             input=(HERE / "preamble.typ").read_text() + INPUT.read_text(),
@@ -197,4 +208,11 @@ def docx2docx():
 
 
 if __name__ == "__main__":
-    app()
+    idx = None
+    try:
+        idx = argv.index("--")
+        TYPST_OPTS = argv[idx + 1 :]
+    except ValueError:
+        TYPST_OPTS = []
+    finally:
+        app(args=argv[:idx] if idx else argv)
