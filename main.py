@@ -8,10 +8,10 @@ from sys import argv
 from tempfile import TemporaryDirectory
 from typing import Annotated, Literal, Optional
 
-from extract import extract  # ty: ignore[unresolved-import]
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
+from extract import extract  # ty: ignore[unresolved-import]
 from pdfservices import export
 from utils import TempFile
 

@@ -41,3 +41,6 @@ include = [
   "pdfservices.py",
   "preamble.typ",
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["extract"]
