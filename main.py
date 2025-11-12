@@ -14,10 +14,7 @@ from typer import Argument, Exit, Option, Typer
 
 from pdfservices import export
 
-app = Typer(
-    name="typ2docx",
-    help="Converting Typst project to DOCX format.",
-)
+app = Typer()
 console = Console()
 
 HERE: Path = Path(__file__).parent
@@ -67,7 +64,7 @@ def main(
             help="Keep intermediate files in working directory for inspection.",
         ),
     ] = False,
-    # defined here, handled in main
+    # defined here for cli help only, handled in main
     typst_opts: Annotated[
         list[str],
         Argument(
@@ -208,11 +205,10 @@ def docx2docx():
 
 
 if __name__ == "__main__":
-    idx = None
     try:
         idx = argv.index("--")
-        TYPST_OPTS = argv[idx + 1 :]
+        argv, TYPST_OPTS = argv[:idx], argv[idx + 1 :]
     except ValueError:
         TYPST_OPTS = []
     finally:
-        app(*argv[1 : idx if idx else -1])  # typer doesn't expect argv[0]
+        app()
