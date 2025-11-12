@@ -13,6 +13,7 @@ from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
 from pdfservices import export
+from utils import TempFile
 
 app = Typer()
 console = Console()
@@ -105,16 +106,22 @@ def main(
 def typ2pdf():
     console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
     try:
-        run(
-            ["typst", "compile", *TYPST_OPTS, "-", DIR / "a.pdf"],
-            cwd=INPUT.parent,
-            text=True,
-            input=(HERE / "preamble.typ").read_text() + INPUT.read_text(),
-            check=True,
-        )
-    except CalledProcessError:
+        with TempFile(
+            INPUT.with_name(f".typ2docx.{INPUT.name}"),
+            (HERE / "preamble.typ").read_text() + INPUT.read_text(),
+        ) as input:
+            try:
+                run(["typst", "compile", *TYPST_OPTS, input, DIR / "a.pdf"], check=True)
+            except CalledProcessError:
+                console.print(
+                    "[bold red]Error:[/bold red] "
+                    "Failed to compile Typst project to PDF."
+                )
+                raise Exit(1)
+    except PermissionError:
         console.print(
-            "[bold red]Error:[/bold red] Make sure the Typst project compiles!"
+            "[bold red]Error:[/bold red] Failed to compile Typst project to PDF. "
+            "Write access to the project directory is required!"
         )
         raise Exit(1)
 
