@@ -55,8 +55,8 @@ def main(
         Option(
             "-o",
             "--output",
-            help="Output DOCX file path. "
-            "Defaults to input filename with .docx extension.",
+            help="Output DOCX file path.",
+            show_default="input.with_suffix('.docx')",
         ),
     ] = None,
     debug: Annotated[
