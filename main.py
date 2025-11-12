@@ -215,4 +215,4 @@ if __name__ == "__main__":
     except ValueError:
         TYPST_OPTS = []
     finally:
-        app(args=argv[:idx] if idx else argv)
+        app(*argv[1 : idx if idx else -1])  # typer doesn't expect argv[0]
