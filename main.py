@@ -170,9 +170,22 @@ def pdf2docx():
 
 def typ2typ():
     """Typst to Typst (math only)"""
+
     console.print("[bold green]Extracting[/bold green] math source code")
+
     try:
-        eqs: list[str] = extract(str(INPUT))
+        root = TYPST_OPTS[TYPST_OPTS.index("--root") + 1]
+    except ValueError:
+        root = None
+    except IndexError:
+        console.print(
+            "[bold red]Error:[/bold red] "
+            "Failed to extract equations, make sure a valid --root is passed!"
+        )
+        raise Exit(1)
+
+    try:
+        eqs: list[str] = extract(str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             console.print(
