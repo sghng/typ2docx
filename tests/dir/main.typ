@@ -14,7 +14,7 @@ $ Gamma(z) = integral_0^infinity t^{z-1}e^(-t) d t $
 
 // included math
 
-#include "include.typ"
+#include "../include.typ" // tests including from parent dirs
 
 #lorem(20)
 
