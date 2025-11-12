@@ -25,7 +25,7 @@ INPUT: Path
 OUTPUT: Path
 ENGINE: str
 DEBUG: bool
-TYPST_OPTS: list[str]
+TYPST_OPTS: list[str] = []
 
 
 @contextmanager
@@ -229,6 +229,6 @@ if __name__ == "__main__":
         idx = argv.index("--")
         argv, TYPST_OPTS = argv[:idx], argv[idx + 1 :]
     except ValueError:
-        TYPST_OPTS = []
+        pass
     finally:
         app()
