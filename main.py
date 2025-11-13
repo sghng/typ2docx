@@ -25,7 +25,13 @@ INPUT: Path
 OUTPUT: Path
 ENGINE: str
 DEBUG: bool
-TYPST_OPTS: list[str] = []
+
+try:
+    idx = argv.index("--")
+    TYPST_OPTS = argv[idx + 1 :]
+    argv = argv[:idx]
+except ValueError:
+    TYPST_OPTS = []
 
 
 @contextmanager
@@ -225,10 +231,4 @@ def docx2docx():
 
 
 if __name__ == "__main__":
-    try:
-        idx = argv.index("--")
-        argv, TYPST_OPTS = argv[:idx], argv[idx + 1 :]
-    except ValueError:
-        pass
-    finally:
-        app()
+    app()
