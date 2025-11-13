@@ -2,10 +2,10 @@ clean:
     rm -rf *.docx *.pdf *.xml __pycache__/ dist/ target/ .typ2docx/
 
 test-pdfservices:
-    dotenv python3 main.py -e pdfservices tests/dir/main.typ -- --root tests
+    dotenv -- ./main.py -e pdfservices tests/dir/main.typ -- --root tests
 
 test-acrobat:
-    dotenv python3 main.py -e acrobat tests/dir/main.typ -- --root tests
+    ./main.py -e acrobat tests/dir/main.typ -- --root tests
 
 pack-docx DIR OUTPUT:
     cd "{{DIR}}" && zip -r -q "../{{OUTPUT}}" *

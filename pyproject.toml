@@ -40,4 +40,8 @@ include = [
   "merge.xslt",
   "pdfservices.py",
   "preamble.typ",
+  "utils.py",
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["extract"]
