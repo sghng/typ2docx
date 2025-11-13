@@ -4,19 +4,18 @@ from contextlib import contextmanager
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError, run
+from sys import argv
 from tempfile import TemporaryDirectory
 from typing import Annotated, Literal, Optional
 
-from extract import extract  # ty: ignore[unresolved-import]
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
+from extract import extract  # ty: ignore[unresolved-import]
 from pdfservices import export
+from utils import TempFile
 
-app = Typer(
-    name="typ2docx",
-    help="Converting Typst project to DOCX format.",
-)
+app = Typer()
 console = Console()
 
 HERE: Path = Path(__file__).parent
@@ -26,6 +25,13 @@ INPUT: Path
 OUTPUT: Path
 ENGINE: str
 DEBUG: bool
+
+try:
+    idx = argv.index("--")
+    TYPST_OPTS = argv[idx + 1 :]
+    argv = argv[:idx]
+except ValueError:
+    TYPST_OPTS = []
 
 
 @contextmanager
@@ -53,8 +59,8 @@ def main(
         Option(
             "-o",
             "--output",
-            help="Output DOCX file path. "
-            "Defaults to input filename with .docx extension.",
+            help="Output DOCX file path.",
+            show_default="input.with_suffix('.docx')",
         ),
     ] = None,
     debug: Annotated[
@@ -65,8 +71,17 @@ def main(
             help="Keep intermediate files in working directory for inspection.",
         ),
     ] = False,
+    # defined here for cli help only, handled in main
+    typst_opts: Annotated[
+        list[str],
+        Argument(
+            help="Options forwarded to the Typst compiler (must follow --).",
+            metavar="[-- TYPST_OPT...]",
+        ),
+    ] = [],
 ):
     """Convert a Typst project to DOCX format."""
+
     global INPUT, OUTPUT, DEBUG, ENGINE
     INPUT, OUTPUT, ENGINE, DEBUG = (
         input,
@@ -97,16 +112,22 @@ def main(
 def typ2pdf():
     console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
     try:
-        run(
-            ["typst", "compile", "-", DIR / "a.pdf"],
-            cwd=INPUT.parent,
-            text=True,
-            input=(HERE / "preamble.typ").read_text() + INPUT.read_text(),
-            check=True,
-        )
-    except CalledProcessError:
+        with TempFile(
+            INPUT.with_name(f".typ2docx.{INPUT.name}"),
+            (HERE / "preamble.typ").read_text() + INPUT.read_text(),
+        ) as input:
+            try:
+                run(["typst", "compile", *TYPST_OPTS, input, DIR / "a.pdf"], check=True)
+            except CalledProcessError:
+                console.print(
+                    "[bold red]Error:[/bold red] "
+                    "Failed to compile Typst project to PDF."
+                )
+                raise Exit(1)
+    except PermissionError:
         console.print(
-            "[bold red]Error:[/bold red] Make sure the Typst project compiles!"
+            "[bold red]Error:[/bold red] Failed to compile Typst project to PDF. "
+            "Write access to the project directory is required!"
         )
         raise Exit(1)
 
@@ -155,9 +176,22 @@ def pdf2docx():
 
 def typ2typ():
     """Typst to Typst (math only)"""
+
     console.print("[bold green]Extracting[/bold green] math source code")
+
     try:
-        eqs: list[str] = extract(str(INPUT))
+        root = TYPST_OPTS[TYPST_OPTS.index("--root") + 1]
+    except ValueError:
+        root = None
+    except IndexError:
+        console.print(
+            "[bold red]Error:[/bold red] "
+            "Failed to extract equations, make sure a valid --root is passed!"
+        )
+        raise Exit(1)
+
+    try:
+        eqs: list[str] = extract(str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             console.print(

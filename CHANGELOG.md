@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+[unreleased]: https://github.com/sghng/typ2docx/compare/v0.2.0...main
+
+### Added
+
+- Support passing additional flags to Typst compiler via `-- --flags ...`. The
+  `--root` flag has special treatment to make sure the math extraction works.
+  (#9)
+
+### Changed
+
+- To make `--root` work, we had to create a new source file (e.g.
+  `.typ2docx.main.typ`) along the input file, due to
+  [a bug in the Typst compiler](https://github.com/typst/typst/issues/7370).
+  Therefore, this tool now requires write access to the project directory.
+
 ## [0.2.0] - 2025-11-11
 
 [0.2.0]: https://github.com/sghng/typ2docx/compare/v0.1.0...v0.2.0

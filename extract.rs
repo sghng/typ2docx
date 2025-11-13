@@ -25,8 +25,16 @@ mod extract {
 
 #[pyfunction]
 #[pyo3(name = "extract")]
-fn extract_equations(path: &str) -> Vec<String> {
-    let world = SimpleWorld::new(Path::new(path));
+fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
+    let path = Path::new(path)
+        .canonicalize()
+        .expect("path should be valid");
+    let root = match root {
+        Some(r) => Path::new(r).canonicalize().expect("root should be valid"),
+        None => path.parent().unwrap().canonicalize().unwrap(),
+    };
+
+    let world = SimpleWorld::new(&path, &root);
     let content = eval(
         &ROUTINES,
         (&world as &dyn World).track(),
@@ -35,8 +43,9 @@ fn extract_equations(path: &str) -> Vec<String> {
         Route::default().track(),
         &world.source(world.main()).unwrap(),
     )
-    .expect("the project should compile successfully")
+    .expect("project should compile")
     .content();
+
     let mut equations: Vec<String> = Vec::new();
     let _ = content.traverse(&mut |elem: Content| -> ControlFlow<()> {
         if let Some(_) = elem.to_packed::<EquationElem>() {
@@ -61,9 +70,8 @@ struct SimpleWorld {
 }
 
 impl SimpleWorld {
-    fn new(path: &Path) -> Self {
-        let path = path.canonicalize().expect("the path should be valid");
-        let root = path.parent().unwrap().canonicalize().unwrap();
+    fn new(path: &Path, root: &Path) -> Self {
+        let root = root.to_path_buf();
         let main = FileId::new(None, VirtualPath::within_root(&path, &root).unwrap());
         let files = Mutex::new(HashMap::new());
         Self { root, main, files }
@@ -72,6 +80,7 @@ impl SimpleWorld {
     /// load a source if isn't loaded already
     fn load_source(&self, id: FileId) -> FileResult<Source> {
         let mut files = self.files.lock().unwrap();
+        // TODO: this can be changed to match or HashMap::entry() API
         if let Some(source) = files.get(&id) {
             return Ok(source.clone());
         }
