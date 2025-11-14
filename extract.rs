@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fs::{read, read_to_string},
     ops::ControlFlow,
     path::{Path, PathBuf},
     sync::{LazyLock, Mutex},
@@ -34,7 +35,11 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
         .expect("path should be valid");
     let root = match root {
         Some(r) => Path::new(r).canonicalize().expect("root should be valid"),
-        None => path.parent().unwrap().canonicalize().unwrap(),
+        None => path
+            .parent()
+            .expect("path should have parent")
+            .canonicalize()
+            .unwrap(),
     };
 
     let world = SimpleWorld::new(&path, &root);
@@ -45,15 +50,20 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
         Traced::default().track(),
         Sink::default().track_mut(),
         Route::default().track(),
-        &world.source(world.main()).unwrap(),
+        &world
+            .source(world.main())
+            .expect("src for main should be available"),
     )
     .expect("project should compile")
     .content()
     .traverse(&mut |elem: Content| {
         if elem.to_packed::<EquationElem>().is_some() {
             let span = elem.span();
-            let source = world.source(span.id().unwrap()).unwrap();
-            equations.push(source.text()[source.range(span).unwrap()].to_string());
+            let source = world
+                .source(span.id().expect("spans are attached"))
+                .expect("src files should be available");
+            equations
+                .push(source.text()[source.range(span).expect("ranges are valid")].to_string());
         }
         ControlFlow::<(), ()>::Continue(())
     });
@@ -72,7 +82,10 @@ struct SimpleWorld {
 impl SimpleWorld {
     fn new(path: &Path, root: &Path) -> Self {
         let root = root.to_path_buf();
-        let main = FileId::new(None, VirtualPath::within_root(&path, &root).unwrap());
+        let main = FileId::new(
+            None,
+            VirtualPath::within_root(&path, &root).expect("entry point should be in the root"),
+        );
         let files = Mutex::new(HashMap::new());
         Self { root, main, files }
     }
@@ -94,14 +107,24 @@ impl World for SimpleWorld {
             .or_insert_with(|| {
                 Source::new(
                     id,
-                    std::fs::read_to_string(id.vpath().resolve(&self.root).unwrap()).unwrap(),
+                    read_to_string(
+                        id.vpath()
+                            .resolve(&self.root)
+                            .expect("src files should be present"),
+                    )
+                    .expect("src files should be readable"),
                 )
             })
             .clone())
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
-            std::fs::read(id.vpath().resolve(&self.root).unwrap()).unwrap(),
+            read(
+                id.vpath()
+                    .resolve(&self.root)
+                    .expect("file should be available"),
+            )
+            .expect("file should be readable"),
         ))
     }
     // dummy implementations
