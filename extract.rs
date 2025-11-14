@@ -38,7 +38,8 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     };
 
     let world = SimpleWorld::new(&path, &root);
-    let content = eval(
+    let mut equations = Vec::new();
+    let _ = eval(
         &ROUTINES,
         (&world as &dyn World).track(),
         Traced::default().track(),
@@ -47,18 +48,14 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
         &world.source(world.main()).unwrap(),
     )
     .expect("project should compile")
-    .content();
-
-    let mut equations: Vec<String> = Vec::new();
-    let _ = content.traverse(&mut |elem: Content| -> ControlFlow<()> {
-        if let Some(_) = elem.to_packed::<EquationElem>() {
+    .content()
+    .traverse(&mut |elem: Content| {
+        if elem.to_packed::<EquationElem>().is_some() {
             let span = elem.span();
-            let file_id = span.id().unwrap();
-            let source = world.source(file_id).unwrap();
-            let range = source.range(span).unwrap();
-            equations.push(source.text()[range].to_string());
+            let source = world.source(span.id().unwrap()).unwrap();
+            equations.push(source.text()[source.range(span).unwrap()].to_string());
         }
-        ControlFlow::Continue(())
+        ControlFlow::<(), ()>::Continue(())
     });
     equations
 }
