@@ -186,7 +186,7 @@ def typ2typ():
     except IndexError:
         console.print(
             "[bold red]Error:[/bold red] "
-            "Failed to extract equations, make sure a valid --root is passed!"
+            "Failed to extract equations. The --root flag requires a value."
         )
         raise Exit(1)
 
