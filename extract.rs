@@ -1,20 +1,23 @@
-use std::collections::HashMap;
-use std::ops::ControlFlow;
-use std::path::{Path, PathBuf};
-use std::sync::{LazyLock, Mutex};
+use std::{
+    collections::HashMap,
+    ops::ControlFlow,
+    path::{Path, PathBuf},
+    sync::{LazyLock, Mutex},
+};
 
 use pyo3::prelude::{pyfunction, pymodule};
 
-use typst::comemo::Track;
-use typst::diag::FileResult;
-use typst::engine::{Route, Sink, Traced};
-use typst::foundations::{Bytes, Content, Datetime};
-use typst::math::EquationElem;
-use typst::syntax::{FileId, Source, VirtualPath};
-use typst::text::{Font, FontBook};
-use typst::utils::LazyHash;
-use typst::ROUTINES;
-use typst::{Library, LibraryExt, World};
+use typst::{
+    comemo::Track,
+    diag::FileResult,
+    engine::{Route, Sink, Traced},
+    foundations::{Bytes, Content, Datetime},
+    math::EquationElem,
+    syntax::{FileId, Source, VirtualPath},
+    text::{Font, FontBook},
+    utils::LazyHash,
+    Library, LibraryExt, World, ROUTINES,
+};
 use typst_eval::eval;
 
 #[pymodule]
