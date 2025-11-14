@@ -33,14 +33,13 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     let path = Path::new(path)
         .canonicalize()
         .expect("path should be valid");
-    let root = match root {
-        Some(r) => Path::new(r).canonicalize().expect("root should be valid"),
-        None => path
-            .parent()
-            .expect("path should have parent")
-            .canonicalize()
-            .unwrap(),
-    };
+    let root = root
+        .map_or_else(
+            || path.parent().expect("path should have parent"),
+            |r| Path::new(r),
+        )
+        .canonicalize()
+        .expect("root should be valid");
 
     let world = SimpleWorld::new(&path, &root);
     let mut equations = Vec::new();
