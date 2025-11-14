@@ -76,21 +76,6 @@ impl SimpleWorld {
         let files = Mutex::new(HashMap::new());
         Self { root, main, files }
     }
-
-    /// load a source if isn't loaded already
-    fn load_source(&self, id: FileId) -> FileResult<Source> {
-        let mut files = self.files.lock().unwrap();
-        // TODO: this can be changed to match or HashMap::entry() API
-        if let Some(source) = files.get(&id) {
-            return Ok(source.clone());
-        }
-        let source = Source::new(
-            id,
-            std::fs::read_to_string(id.vpath().resolve(&self.root).unwrap()).unwrap(),
-        );
-        files.insert(id, source.clone());
-        Ok(source)
-    }
 }
 
 static LIBRARY: LazyLock<LazyHash<Library>> = LazyLock::new(|| LazyHash::new(Library::default()));
@@ -101,7 +86,18 @@ impl World for SimpleWorld {
         self.main
     }
     fn source(&self, id: FileId) -> FileResult<Source> {
-        self.load_source(id)
+        Ok(self
+            .files
+            .lock()
+            .unwrap()
+            .entry(id)
+            .or_insert_with(|| {
+                Source::new(
+                    id,
+                    std::fs::read_to_string(id.vpath().resolve(&self.root).unwrap()).unwrap(),
+                )
+            })
+            .clone())
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
