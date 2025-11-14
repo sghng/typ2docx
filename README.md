@@ -69,7 +69,7 @@ For macOS users, it is recommended to install these dependencies via
 [Homebrew](https://brew.sh/) with the following command:
 
 ```sh
-brew install pandoc saxon adobe-acrobat-reader
+brew install pandoc saxon
 ```
 
 For Windows users, it is recommended to install via `winget`:
