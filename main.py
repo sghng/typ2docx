@@ -103,7 +103,7 @@ async def main(
             tg.create_task(branch1())
             tg.create_task(branch2())
         console.print("[bold green]Merging[/bold green] DOCX")
-        docx2docx()
+        await docx2docx()
         move(DIR / "out.docx", OUTPUT)
     console.print(f"[bold green]Output saved to[/bold green] {OUTPUT}")
 
