@@ -1,4 +1,5 @@
 from asyncio import CancelledError, create_subprocess_exec
+from asyncio import run as aiorun
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
@@ -22,3 +23,7 @@ async def run(*args, **kwargs):
         raise
     if returncode:
         raise CalledProcessError(returncode, args)
+
+
+def syncify(f):
+    return wraps(f)(lambda *args, **kwargs: aiorun(f(*args, **kwargs)))

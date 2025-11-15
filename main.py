@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
-from asyncio import sleep
-from concurrent.futures import ThreadPoolExecutor
+from asyncio import TaskGroup, sleep
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import copy2, move
@@ -14,7 +13,7 @@ from typer import Argument, Exit, Option, Typer
 
 from extract import extract  # ty: ignore[unresolved-import]
 from pdfservices import export
-from utils import TempFile, run
+from utils import TempFile, run, syncify
 
 app = Typer()
 console = Console()
@@ -49,7 +48,8 @@ def WorkDirectory():
 
 
 @app.command()
-def main(
+@syncify
+async def main(
     input: Annotated[Path, Argument(help="Entry point to the Typst project")],
     engine: Annotated[
         Literal["acrobat", "pdfservices"],
@@ -99,15 +99,23 @@ def main(
         )
 
     with WorkDirectory():
-        with ThreadPoolExecutor() as executor:
-            future1 = executor.submit(lambda: (typ2pdf(), pdf2docx()))
-            future2 = executor.submit(lambda: (typ2typ(), typ2docx()))
-            future1.result()
-            future2.result()
+        async with TaskGroup() as tg:
+            tg.create_task(branch1())
+            tg.create_task(branch2())
         console.print("[bold green]Merging[/bold green] DOCX")
         docx2docx()
         move(DIR / "out.docx", OUTPUT)
     console.print(f"[bold green]Output saved to[/bold green] {OUTPUT}")
+
+
+async def branch1():
+    await typ2pdf()
+    await pdf2docx()
+
+
+async def branch2():
+    await typ2typ()
+    await typ2docx()
 
 
 async def typ2pdf():
