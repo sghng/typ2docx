@@ -1,8 +1,18 @@
 # Changelog
 
-## [0.3.0] - 2025-11-14
+## [Unreleased]
 
-[0.3.0]: https://github.com/sghng/typ2docx/compare/v0.2.0...v0.3.0
+[unreleased]: https://github.com/sghng/typ2docx/compare/v0.3.0...main
+
+### Changed
+
+- Refactored pipeline with `asyncio`, so that subprocesses can be terminated
+  gracefully when an error is encountered in any branch, or when user decided to
+  abort the program. (#16)
+- As a result of the above refactoring, due to the use of `asyncio.TaskGroup`,
+  the minimum Python version is bumped to 3.11.
+
+## [0.3.0] - 2025-11-14
 
 ### Added
 
