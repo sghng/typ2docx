@@ -56,7 +56,7 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     .expect("project should compile")
     .content()
     .traverse(&mut |elem: Content| {
-        if elem.to_packed::<EquationElem>().is_some() {
+        if let Some(_) = elem.to_packed::<EquationElem>() {
             let span = elem.span();
             let source = world
                 .source(span.id().expect("spans are attached"))
