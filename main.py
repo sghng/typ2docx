@@ -197,7 +197,7 @@ async def typ2typ():
         )
         raise Exit(1)
 
-    sleep(0)
+    await sleep(0)
     try:
         eqs: list[str] = extract(str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
@@ -213,7 +213,7 @@ async def typ2typ():
     console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted
     src = "\n\n".join(eqs)
-    sleep(0)
+    await sleep(0)
     (DIR / "b.typ").write_text(src)
 
 
