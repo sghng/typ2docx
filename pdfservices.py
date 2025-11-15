@@ -1,3 +1,4 @@
+from asyncio import run, sleep
 from os import environ
 from pathlib import Path
 
@@ -21,7 +22,7 @@ from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_target_for
 from adobe.pdfservices.operation.pdfjobs.result.export_pdf_result import ExportPDFResult
 
 
-def export(input: Path, output: Path | None = None) -> None:
+async def export(input: Path, output: Path | None = None) -> None:
     """
     Export a PDF file to DOCX format using Adobe PDFServices API.
 
@@ -55,13 +56,16 @@ def export(input: Path, output: Path | None = None) -> None:
         input_asset = service.upload(input_stream, PDFServicesMediaType.PDF)
         params = ExportPDFParams(ExportPDFTargetFormat.DOCX)
         job = ExportPDFJob(input_asset, params)
+        await sleep(0)
         location = service.submit(job)
 
         response = service.get_job_result(location, ExportPDFResult)
         result_asset = response.get_result().get_asset()
+        await sleep(0)
         output_stream = service.get_content(result_asset)
 
         output = output or input.with_suffix(".docx")
+        await sleep(0)
         with open(output, "wb") as f:
             f.write(output_stream.get_input_stream())
 
@@ -70,4 +74,4 @@ def export(input: Path, output: Path | None = None) -> None:
 
 
 if __name__ == "__main__":
-    export(Path(".typ2docx/a.pdf"))
+    run(export(Path(".typ2docx/a.pdf")))
