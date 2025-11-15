@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+[unreleased]: https://github.com/sghng/typ2docx/compare/v0.3.0...main
+
+### Changed
+
+- Refactor the Rust extension to make it more idiomatic and concise. (#15)
+
 ## [0.3.0] - 2025-11-14
 
 [0.3.0]: https://github.com/sghng/typ2docx/compare/v0.2.0...v0.3.0
