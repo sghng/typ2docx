@@ -1,19 +1,17 @@
 #! /usr/bin/env python3
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from asyncio import TaskGroup, sleep
 from pathlib import Path
 from shutil import copy2, move
-from subprocess import CalledProcessError, run
+from subprocess import CalledProcessError
 from sys import argv
-from tempfile import TemporaryDirectory
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
 from extract import extract  # ty: ignore[unresolved-import]
 from pdfservices import export
-from utils import TempFile
+from utils import TempFile, WorkingDirectory, run, syncify
 
 app = Typer()
 console = Console()
@@ -34,28 +32,16 @@ except ValueError:
     TYPST_OPTS = []
 
 
-@contextmanager
-def WorkDirectory():
-    global DIR
-    if DEBUG:
-        DIR = Path.cwd() / ".typ2docx/"
-        DIR.mkdir(exist_ok=True)
-        yield
-    else:
-        with TemporaryDirectory(prefix=".typ2docx_") as tmpdir:
-            DIR = Path(tmpdir)
-            yield
-
-
 @app.command()
-def main(
+@syncify
+async def main(
     input: Annotated[Path, Argument(help="Entry point to the Typst project")],
     engine: Annotated[
         Literal["acrobat", "pdfservices"],
         Option("-e", "--engine", help="The engine used to convert PDF to DOCX."),
     ],
     output: Annotated[
-        Optional[Path],
+        Path | None,
         Option(
             "-o",
             "--output",
@@ -97,19 +83,29 @@ def main(
             "Intermediate files will be kept in ./.typ2docx/"
         )
 
-    with WorkDirectory():
-        with ThreadPoolExecutor() as executor:
-            future1 = executor.submit(lambda: (typ2pdf(), pdf2docx()))
-            future2 = executor.submit(lambda: (typ2typ(), typ2docx()))
-            future1.result()
-            future2.result()
+    with WorkingDirectory(DEBUG) as dir:
+        global DIR
+        DIR = dir
+        async with TaskGroup() as tg:
+            tg.create_task(branch1())
+            tg.create_task(branch2())
         console.print("[bold green]Merging[/bold green] DOCX")
-        docx2docx()
+        await docx2docx()
         move(DIR / "out.docx", OUTPUT)
     console.print(f"[bold green]Output saved to[/bold green] {OUTPUT}")
 
 
-def typ2pdf():
+async def branch1():
+    await typ2pdf()
+    await pdf2docx()
+
+
+async def branch2():
+    await typ2typ()
+    await typ2docx()
+
+
+async def typ2pdf():
     console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
     try:
         with TempFile(
@@ -117,7 +113,7 @@ def typ2pdf():
             (HERE / "preamble.typ").read_text() + INPUT.read_text(),
         ) as input:
             try:
-                run(["typst", "compile", *TYPST_OPTS, input, DIR / "a.pdf"], check=True)
+                await run("typst", "compile", *TYPST_OPTS, input, DIR / "a.pdf")
             except CalledProcessError:
                 console.print(
                     "[bold red]Error:[/bold red] "
@@ -132,7 +128,7 @@ def typ2pdf():
         raise Exit(1)
 
 
-def pdf2docx():
+async def pdf2docx():
     match ENGINE:
         case "pdfservices":
             console.print(
@@ -140,7 +136,7 @@ def pdf2docx():
                 "PDF -> DOCX with Adobe PDFServices API"
             )
             try:
-                export(DIR / "a.pdf")
+                await export(DIR / "a.pdf")
             except ValueError:
                 console.print(
                     "[bold red]Error:[/bold red] Make sure you have "
@@ -159,10 +155,8 @@ def pdf2docx():
                 "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
             )
             try:
-                run(
-                    ["osascript", HERE / "acrobat.applescript", DIR / "a.pdf"],
-                    cwd=DIR,
-                    check=True,
+                await run(
+                    "osascript", HERE / "acrobat.applescript", DIR / "a.pdf", cwd=DIR
                 )
             except CalledProcessError:
                 console.print(
@@ -174,7 +168,7 @@ def pdf2docx():
             raise NotImplementedError("More engines support incoming!")
 
 
-def typ2typ():
+async def typ2typ():
     """Typst to Typst (math only)"""
 
     console.print("[bold green]Extracting[/bold green] math source code")
@@ -190,6 +184,7 @@ def typ2typ():
         )
         raise Exit(1)
 
+    await sleep(0)
     try:
         eqs: list[str] = extract(str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
@@ -205,14 +200,15 @@ def typ2typ():
     console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted
     src = "\n\n".join(eqs)
+    await sleep(0)
     (DIR / "b.typ").write_text(src)
 
 
-def typ2docx():
+async def typ2docx():
     """Typst to DOCX (with Pandoc, math only)"""
     console.print("[bold green]Converting[/bold green] TYP -> DOCX with Pandoc")
     try:
-        run(["pandoc", "b.typ", "-o", "b.docx"], cwd=DIR, check=True)
+        await run("pandoc", "b.typ", "-o", "b.docx", cwd=DIR)
     except CalledProcessError:
         console.print(
             "[bold red]Error:[/bold red] Failed to convert Typst -> DOCX with Pandoc"
@@ -220,11 +216,11 @@ def typ2docx():
         raise Exit(1)
 
 
-def docx2docx():
+async def docx2docx():
     # Saxon evaluates path relative to the xsl, must be copied
     copy2(HERE / "merge.xslt", DIR / "merge.xslt")
     try:
-        run(["sh", HERE / "merge.sh"], cwd=DIR, check=True)
+        await run("sh", HERE / "merge.sh", cwd=DIR)
     except CalledProcessError:
         console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)
