@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 from asyncio import TaskGroup, sleep, to_thread
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError
@@ -12,6 +13,9 @@ from typer import Argument, Exit, Option, Typer
 
 from extract import extract  # ty: ignore[unresolved-import]
 from utils import TempFile, WorkingDirectory, run, syncify
+
+GIL = get_config_var("Py_GIL_DISABLED") != 1
+print(GIL)
 
 app = Typer()
 console = Console()
@@ -139,13 +143,11 @@ async def pdf2docx():
             )
 
             try:
-                if get_config_var("Py_GIL_DISABLED"):
-                    await to_thread(export, DIR / "a.pdf")
-                else:
-                    from concurrent.futures import ProcessPoolExecutor
-
+                if GIL:
                     with ProcessPoolExecutor() as executor:
                         executor.submit(export, DIR / "a.pdf").result()
+                else:
+                    await to_thread(export, DIR / "a.pdf")
             except ValueError:
                 console.print(
                     "[bold red]Error:[/bold red] Make sure you have "
@@ -195,7 +197,11 @@ async def typ2typ():
 
     await sleep(0)
     try:
-        eqs: list[str] = extract(str(INPUT), root)
+        if GIL:
+            with ProcessPoolExecutor() as executor:
+                eqs = executor.submit(extract, str(INPUT), root).result()
+        else:
+            eqs: list[str] = await to_thread(extract, str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             console.print(
