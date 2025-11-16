@@ -15,7 +15,6 @@ from extract import extract  # ty: ignore[unresolved-import]
 from utils import TempFile, WorkingDirectory, run, syncify
 
 GIL = get_config_var("Py_GIL_DISABLED") != 1
-print(GIL)
 
 app = Typer()
 console = Console()
