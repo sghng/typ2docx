@@ -11,6 +11,7 @@
   abort the program. (#16)
 - As a result of the above refactoring, due to the use of `asyncio.TaskGroup`,
   the minimum Python version is bumped to 3.11.
+- Refactored the Rust extension to make it more idiomatic and concise. (#15)
 
 ## [0.3.0] - 2025-11-14
 
