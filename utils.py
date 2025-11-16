@@ -17,12 +17,13 @@ def TempFile(path: Path, content: str = ""):
 async def run(*args, **kwargs):
     process = await create_subprocess_exec(*args, **kwargs)
     try:
-        returncode = await process.wait()
+        if returncode := await process.wait():
+            raise CalledProcessError(returncode, args)
     except CancelledError:
-        process.terminate()
+        process.kill()
         raise
-    if returncode:
-        raise CalledProcessError(returncode, args)
+    finally:
+        await process.wait()
 
 
 def syncify(f):
