@@ -1,9 +1,21 @@
 from asyncio import CancelledError, create_subprocess_exec
-from asyncio import run as aiorun
+from asyncio import run as _run
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
 from subprocess import CalledProcessError
+from tempfile import TemporaryDirectory
+
+
+@contextmanager
+def WorkingDirectory(debug: bool = False):
+    if debug:
+        dir = Path.cwd() / ".typ2docx/"
+        dir.mkdir(exist_ok=True)
+        yield dir
+    else:
+        with TemporaryDirectory(prefix="typ2docx_") as dir:
+            yield Path(dir)
 
 
 @contextmanager
@@ -27,4 +39,4 @@ async def run(*args, **kwargs):
 
 
 def syncify(f):
-    return wraps(f)(lambda *args, **kwargs: aiorun(f(*args, **kwargs)))
+    return wraps(f)(lambda *args, **kwargs: _run(f(*args, **kwargs)))

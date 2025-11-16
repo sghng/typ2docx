@@ -1,11 +1,9 @@
 #! /usr/bin/env python3
 from asyncio import TaskGroup, sleep
-from contextlib import contextmanager
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError
 from sys import argv
-from tempfile import TemporaryDirectory
 from typing import Annotated, Literal, Optional
 
 from rich.console import Console
@@ -13,7 +11,7 @@ from typer import Argument, Exit, Option, Typer
 
 from extract import extract  # ty: ignore[unresolved-import]
 from pdfservices import export
-from utils import TempFile, run, syncify
+from utils import TempFile, WorkingDirectory, run, syncify
 
 app = Typer()
 console = Console()
@@ -32,19 +30,6 @@ try:
     argv = argv[:idx]
 except ValueError:
     TYPST_OPTS = []
-
-
-@contextmanager
-def WorkDirectory():
-    global DIR
-    if DEBUG:
-        DIR = Path.cwd() / ".typ2docx/"
-        DIR.mkdir(exist_ok=True)
-        yield
-    else:
-        with TemporaryDirectory(prefix=".typ2docx_") as tmpdir:
-            DIR = Path(tmpdir)
-            yield
 
 
 @app.command()
@@ -98,7 +83,9 @@ async def main(
             "Intermediate files will be kept in ./.typ2docx/"
         )
 
-    with WorkDirectory():
+    with WorkingDirectory(DEBUG) as dir:
+        global DIR
+        DIR = dir
         async with TaskGroup() as tg:
             tg.create_task(branch1())
             tg.create_task(branch2())
