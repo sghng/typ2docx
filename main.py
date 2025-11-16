@@ -1,16 +1,16 @@
 #! /usr/bin/env python3
-from asyncio import TaskGroup, sleep
+from asyncio import TaskGroup, sleep, to_thread
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError
 from sys import argv
+from sysconfig import get_config_var
 from typing import Annotated, Literal
 
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
 from extract import extract  # ty: ignore[unresolved-import]
-from pdfservices import export
 from utils import TempFile, WorkingDirectory, run, syncify
 
 app = Typer()
@@ -131,12 +131,21 @@ async def typ2pdf():
 async def pdf2docx():
     match ENGINE:
         case "pdfservices":
+            from pdfservices import export
+
             console.print(
                 "[bold green]Converting[/bold green] "
                 "PDF -> DOCX with Adobe PDFServices API"
             )
+
             try:
-                await export(DIR / "a.pdf")
+                if get_config_var("Py_GIL_DISABLED"):
+                    await to_thread(export, DIR / "a.pdf")
+                else:
+                    from concurrent.futures import ProcessPoolExecutor
+
+                    with ProcessPoolExecutor() as executor:
+                        executor.submit(export, DIR / "a.pdf").result()
             except ValueError:
                 console.print(
                     "[bold red]Error:[/bold red] Make sure you have "
