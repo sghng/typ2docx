@@ -12,9 +12,7 @@
   abort the program. (#16)
 - As a result of the above refactoring, due to the use of `asyncio.TaskGroup`,
   the minimum Python version is bumped to 3.11.
-- Parallelized the invocation of `export` and `extract` with thread on GIL
-  disabled implementation and ProcessPool otherwise, significantly shortened
-  conversion time. (#19)
+- Parallelized the invocation of `export` and `extract` using threads on free-threaded Python (GIL-disabled) and ProcessPoolExecutor on standard Python (GIL-enabled), significantly shortening conversion time. (#19)
 
 ## [0.3.0] - 2025-11-14
 
