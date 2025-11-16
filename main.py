@@ -4,7 +4,7 @@ from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError
 from sys import argv
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
@@ -41,7 +41,7 @@ async def main(
         Option("-e", "--engine", help="The engine used to convert PDF to DOCX."),
     ],
     output: Annotated[
-        Optional[Path],
+        Path | None,
         Option(
             "-o",
             "--output",
