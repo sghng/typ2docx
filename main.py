@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from asyncio import TaskGroup, sleep, to_thread
+from asyncio import TaskGroup, get_running_loop, to_thread
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from shutil import copy2, move
@@ -144,7 +144,9 @@ async def pdf2docx():
             try:
                 if GIL:
                     with ProcessPoolExecutor() as executor:
-                        executor.submit(export, DIR / "a.pdf").result()
+                        await get_running_loop().run_in_executor(
+                            executor, export, DIR / "a.pdf"
+                        )
                 else:
                     await to_thread(export, DIR / "a.pdf")
             except ValueError:
@@ -194,13 +196,14 @@ async def typ2typ():
         )
         raise Exit(1)
 
-    await sleep(0)
     try:
         if GIL:
             with ProcessPoolExecutor() as executor:
-                eqs = executor.submit(extract, str(INPUT), root).result()
+                eqs = await get_running_loop().run_in_executor(
+                    executor, extract, str(INPUT), root
+                )
         else:
-            eqs: list[str] = await to_thread(extract, str(INPUT), root)
+            eqs = await to_thread(extract, str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             console.print(
@@ -214,7 +217,6 @@ async def typ2typ():
     console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted
     src = "\n\n".join(eqs)
-    await sleep(0)
     (DIR / "b.typ").write_text(src)
 
 
