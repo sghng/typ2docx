@@ -12,10 +12,13 @@ keywords = ["Typst", "docx", "converter", "Microsoft Word"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Other Scripting Engines",
   "Programming Language :: Rust",
+  "Programming Language :: Python :: Free Threading :: 3 - Stable",
   "Programming Language :: Unix Shell",
   "Topic :: File Formats",
   "Topic :: Text Processing :: Markup",

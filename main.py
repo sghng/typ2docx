@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from asyncio import TaskGroup, sleep
+from asyncio import TaskGroup
 from pathlib import Path
 from shutil import copy2, move
 from subprocess import CalledProcessError
@@ -10,7 +10,6 @@ from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
 from extract import extract  # ty: ignore[unresolved-import]
-from pdfservices import export
 from utils import TempFile, WorkingDirectory, run, syncify
 
 app = Typer()
@@ -131,12 +130,15 @@ async def typ2pdf():
 async def pdf2docx():
     match ENGINE:
         case "pdfservices":
+            from pdfservices import export
+
             console.print(
                 "[bold green]Converting[/bold green] "
                 "PDF -> DOCX with Adobe PDFServices API"
             )
+
             try:
-                await export(DIR / "a.pdf")
+                await run(export, DIR / "a.pdf")
             except ValueError:
                 console.print(
                     "[bold red]Error:[/bold red] Make sure you have "
@@ -184,9 +186,8 @@ async def typ2typ():
         )
         raise Exit(1)
 
-    await sleep(0)
     try:
-        eqs: list[str] = extract(str(INPUT), root)
+        eqs: list[str] = await run(extract, str(INPUT), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             console.print(
@@ -200,7 +201,6 @@ async def typ2typ():
     console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted
     src = "\n\n".join(eqs)
-    await sleep(0)
     (DIR / "b.typ").write_text(src)
 
 
@@ -220,7 +220,7 @@ async def docx2docx():
     # Saxon evaluates path relative to the xsl, must be copied
     copy2(HERE / "merge.xslt", DIR / "merge.xslt")
     try:
-        await run("sh", HERE / "merge.sh", cwd=DIR)
+        await run(HERE / "merge.sh", cwd=DIR)
     except CalledProcessError:
         console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)

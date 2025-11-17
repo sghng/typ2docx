@@ -21,14 +21,13 @@ use typst::{
 };
 use typst_eval::eval;
 
-#[pymodule]
+#[pymodule(gil_used = false)]
 mod extract {
     #[pymodule_export]
     use super::extract_equations;
 }
 
-#[pyfunction]
-#[pyo3(name = "extract")]
+#[pyfunction(name = "extract")]
 fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     let path = Path::new(path)
         .canonicalize()
