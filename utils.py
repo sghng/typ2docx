@@ -32,7 +32,7 @@ def TempFile(path: Path, content: str = ""):
 async def run(func_or_program, *args, **kwargs):
     raise TypeError(
         "run() argument must be a Callable, str, or Path, not "
-        f"{type(func_or_program).__name__}"
+        f"{type(func_or_program).__name__!r}"
     )
 
 
@@ -41,17 +41,14 @@ _HAS_GIL = get_config_var("Py_GIL_DISABLED") != 1
 
 @run.register
 async def _(func: Callable, *args, **kwargs):
-    if _HAS_GIL:
-        with ProcessPoolExecutor() as executor:
-            return await get_running_loop().run_in_executor(
-                executor, func, *args, **kwargs
-            )
-    else:
+    if not _HAS_GIL or kwargs:
         return await to_thread(func, *args, **kwargs)
+    else:
+        with ProcessPoolExecutor() as executor:
+            return await get_running_loop().run_in_executor(executor, func, *args)
 
 
 @run.register
-@wraps(create_subprocess_exec)
 async def _(program: str | Path, *args, **kwargs):
     process = await create_subprocess_exec(program, *args, **kwargs)
     try:
