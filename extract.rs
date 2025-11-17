@@ -6,9 +6,10 @@ use std::{
     sync::{LazyLock, Mutex},
 };
 
-use pyo3::prelude::{pyfunction, pymodule};
+use pyo3::{pyfunction, pymodule};
 
 use typst::{
+    Library, LibraryExt, ROUTINES, World,
     comemo::Track,
     diag::FileResult,
     engine::{Route, Sink, Traced},
@@ -17,7 +18,6 @@ use typst::{
     syntax::{FileId, Source, VirtualPath},
     text::{Font, FontBook},
     utils::LazyHash,
-    Library, LibraryExt, World, ROUTINES,
 };
 use typst_eval::eval;
 
