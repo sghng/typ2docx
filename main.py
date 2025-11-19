@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
 from asyncio import TaskGroup
+from os import environ, pathsep
 from pathlib import Path
-from shutil import copy2, move
+from shutil import move
 from subprocess import CalledProcessError
-from sys import argv
+from sys import argv, executable
 from typing import Annotated, Literal
 
 from rich.console import Console
@@ -217,22 +218,10 @@ async def typ2docx():
 
 
 async def docx2docx():
-    # Saxon evaluates path relative to the xsl, must be copied
-    copy2(HERE / "merge.xslt", DIR / "merge.xslt")
+    env = environ.copy()
+    env["PATH"] = f"{Path(executable).parent}{pathsep}{env['PATH']}"
     try:
-        from saxonche import PySaxonProcessor
-
-        proc = PySaxonProcessor()
-        xsltproc = proc.new_xslt30_processor()
-        document = proc.parse_xml(
-            xml_text="<doc><item>text1</item><item>text2</item><item>text3</item></doc>"
-        )
-        executable = xsltproc.compile_stylesheet(stylesheet_file="test.xsl")
-        output = executable.transform_to_string(xdm_node=document)
-        print(output)
-
-        # run(["sh", HERE / "merge.sh"], cwd=DIR, check=True)
-        # await run(HERE / "merge.sh", cwd=DIR)
+        await run(HERE / "merge.sh", cwd=DIR, env=env)
     except CalledProcessError:
         console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)
