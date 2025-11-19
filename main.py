@@ -218,10 +218,13 @@ async def typ2docx():
 
 
 async def docx2docx():
-    env = environ.copy()
-    env["PATH"] = f"{Path(executable).parent}{pathsep}{env['PATH']}"
     try:
-        await run(HERE / "merge.sh", cwd=DIR, env=env)
+        await run(
+            HERE / "merge.sh",
+            cwd=DIR,
+            env=environ
+            | {"PATH": f"{Path(executable).parent}{pathsep}{environ['PATH']}"},
+        )
     except CalledProcessError:
         console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)
