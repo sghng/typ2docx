@@ -25,6 +25,9 @@ classifiers = [
   "Topic :: Text Editors :: Word Processors",
 ]
 
+[project.optional-dependencies]
+dev = ["saxonche-stubs"]
+
 [project.urls]
 Repository = "https://github.com/sghng/typ2docx"
 Issues = "https://github.com/sghng/typ2docx/issues"
@@ -44,6 +47,7 @@ include = [
   "merge.xslt",
   "pdfservices.py",
   "preamble.typ",
+  "saxon.py",
   "utils.py",
 ]
 
