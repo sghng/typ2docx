@@ -56,30 +56,10 @@ uv tool install .
 
 The following runtime dependencies are also required:
 
-- [Pandoc](https://pandoc.org/), a universal document converter.
-- [Saxon](https://www.saxonica.com/), a processor for
-  [XSLT 3.0](https://www.w3.org/TR/xslt-30/). The free home edition would
-  suffice.
+- [Pandoc](https://pandoc.org/installing.html), a universal document converter,
+  should be available in `PATH`.
 - One of the supported engines as specified in
   [this section](#pdf-docx-engines).
-
-`pandoc` and `saxon` should be available in `PATH`.
-
-For macOS users, it is recommended to install these dependencies via
-[Homebrew](https://brew.sh/) with the following command:
-
-```sh
-brew install pandoc saxon
-```
-
-For Windows users, it is recommended to install via `winget`:
-
-```pwsh
-winget install pandoc
-```
-
-Linux users should use the package manager specific to your distro for
-installation.
 
 ## Usage
 
