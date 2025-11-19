@@ -6,7 +6,7 @@ unzip -o -q b.docx -d b.d
 rsync -a --delete a.d/ out.d/
 
 # python executable set at call site
-python -m saxon >out.d/word/document.xml
+python3 -m saxon >out.d/word/document.xml
 
 cd out.d # must be zipped from inside!
 zip -r -q ../out.docx *
