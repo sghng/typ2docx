@@ -1,6 +1,6 @@
 [project]
 name = "typ2docx"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = ["pdfservices-sdk>=4.0", "rich", "saxonche", "typer"]
 requires-python = ">=3.11"
 authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]

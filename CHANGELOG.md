@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
-[unreleased]: https://github.com/sghng/typ2docx/compare/v0.4.0...main
+[unreleased]: https://github.com/sghng/typ2docx/compare/v0.5.0...main
+
+## [0.5.0] - 2025-11-20
+
+[0.5.0]: https://github.com/sghng/typ2docx/compare/v0.4.0...v0.5.0
 
 ### Changed
 
