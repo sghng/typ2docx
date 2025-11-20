@@ -86,9 +86,12 @@ async def main(
     with WorkingDirectory(DEBUG) as dir:
         global DIR
         DIR = dir
-        async with TaskGroup() as tg:
-            tg.create_task(branch1())
-            tg.create_task(branch2())
+        try:
+            async with TaskGroup() as tg:
+                tg.create_task(branch1())
+                tg.create_task(branch2())
+        except* Exit as eg:
+            raise eg.exceptions[0]
         console.print("[bold green]Merging[/bold green] DOCX")
         await docx2docx()
         move(DIR / "out.docx", OUTPUT)
