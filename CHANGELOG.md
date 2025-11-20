@@ -4,6 +4,12 @@
 
 [unreleased]: https://github.com/sghng/typ2docx/compare/v0.4.0...main
 
+### Changed
+
+- Saxon is now bundled with this tool via
+  [`saxonche` package](https://pypi.org/project/saxonche/), one less
+  installation step! (#21)
+
 ## [0.4.0] - 2025-11-17
 
 [0.4.0]: https://github.com/sghng/typ2docx/compare/v0.3.0...v0.4.0

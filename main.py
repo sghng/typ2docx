@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
 from asyncio import TaskGroup
+from os import environ, pathsep
 from pathlib import Path
-from shutil import copy2, move
+from shutil import move
 from subprocess import CalledProcessError
-from sys import argv
+from sys import argv, executable
 from typing import Annotated, Literal
 
 from rich.console import Console
@@ -217,10 +218,13 @@ async def typ2docx():
 
 
 async def docx2docx():
-    # Saxon evaluates path relative to the xsl, must be copied
-    copy2(HERE / "merge.xslt", DIR / "merge.xslt")
     try:
-        await run(HERE / "merge.sh", cwd=DIR)
+        await run(
+            HERE / "merge.sh",
+            cwd=DIR,
+            env=environ
+            | {"PATH": f"{Path(executable).parent}{pathsep}{environ['PATH']}"},
+        )
     except CalledProcessError:
         console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
         raise Exit(1)

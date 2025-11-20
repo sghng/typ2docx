@@ -1,7 +1,7 @@
 [project]
 name = "typ2docx"
 version = "0.4.0"
-dependencies = ["pdfservices-sdk>=4.0", "rich", "typer"]
+dependencies = ["pdfservices-sdk>=4.0", "rich", "saxonche", "typer"]
 requires-python = ">=3.11"
 authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]
 description = "A tool to convert Typst project to Microsoft Word format."
@@ -25,6 +25,9 @@ classifiers = [
   "Topic :: Text Editors :: Word Processors",
 ]
 
+[project.optional-dependencies]
+dev = ["saxonche-stubs"]
+
 [project.urls]
 Repository = "https://github.com/sghng/typ2docx"
 Issues = "https://github.com/sghng/typ2docx/issues"
@@ -33,7 +36,7 @@ Issues = "https://github.com/sghng/typ2docx/issues"
 typ2docx = "main:app"
 
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
+requires = ["maturin>=1,<2"]
 build-backend = "maturin"
 
 [tool.maturin]
@@ -44,6 +47,7 @@ include = [
   "merge.xslt",
   "pdfservices.py",
   "preamble.typ",
+  "saxon.py",
   "utils.py",
 ]
 
