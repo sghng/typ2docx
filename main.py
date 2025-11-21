@@ -4,7 +4,7 @@ from os import environ, pathsep
 from pathlib import Path
 from shutil import move
 from subprocess import CalledProcessError
-from sys import argv, executable
+from sys import argv, executable, platform
 from typing import Annotated, Literal
 
 from rich.console import Console
@@ -223,7 +223,7 @@ async def typ2docx():
 async def docx2docx():
     try:
         await run(
-            HERE / "merge.sh",
+            HERE / f"merge.{'ps1' if platform == 'win32' else 'sh'}",
             cwd=DIR,
             env=environ
             | {"PATH": f"{Path(executable).parent}{pathsep}{environ['PATH']}"},
