@@ -3,7 +3,7 @@ from asyncio import run as _run
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
-from functools import singledispatch, wraps
+from functools import partial, singledispatch, wraps
 from pathlib import Path
 from subprocess import CalledProcessError
 from sysconfig import get_config_var
@@ -36,16 +36,16 @@ async def run(func_or_program, *args, **kwargs):
     )
 
 
-_HAS_GIL = get_config_var("Py_GIL_DISABLED") != 1
+if get_config_var("Py_GIL_DISABLED"):
+    run.register(to_thread)
+else:
 
-
-@run.register
-async def _(func: Callable, *args, **kwargs):
-    if not _HAS_GIL or kwargs:
-        return await to_thread(func, *args, **kwargs)
-    else:
+    @run.register
+    async def _(func: Callable, *args, **kwargs):
         with ProcessPoolExecutor() as executor:
-            return await get_running_loop().run_in_executor(executor, func, *args)
+            return await get_running_loop().run_in_executor(
+                executor, partial(func, *args, **kwargs)
+            )
 
 
 @run.register
