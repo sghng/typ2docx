@@ -1,9 +1,8 @@
 use std::{
-    collections::HashMap,
     fs::{read, read_to_string},
     ops::ControlFlow,
     path::{Path, PathBuf},
-    sync::{LazyLock, Mutex},
+    sync::LazyLock,
 };
 
 use pyo3::{pyfunction, pymodule};
@@ -35,7 +34,7 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     let root = root
         .map_or_else(
             || path.parent().expect("path should have parent"),
-            |r| Path::new(r),
+            Path::new,
         )
         .canonicalize()
         .expect("root should be valid");
@@ -55,13 +54,12 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     .expect("project should compile")
     .content()
     .traverse(&mut |elem: Content| {
-        if let Some(_) = elem.to_packed::<EquationElem>() {
+        if elem.to_packed::<EquationElem>().is_some() {
             let span = elem.span();
             let source = world
                 .source(span.id().expect("spans are attached"))
                 .expect("src files should be available");
-            equations
-                .push(source.text()[source.range(span).expect("ranges are valid")].to_string());
+            equations.push(source.text()[source.range(span).expect("ranges are valid")].into());
         }
         ControlFlow::<(), ()>::Continue(())
     });
@@ -70,67 +68,51 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
 
 /// A minimal World implementation for evaluation and extraction
 struct SimpleWorld {
-    /// root dir of the project
-    root: PathBuf,
-    /// main file id
     main: FileId,
-    files: Mutex<HashMap<FileId, Source>>,
+    root: PathBuf,
 }
 
 impl SimpleWorld {
     fn new(path: &Path, root: &Path) -> Self {
-        let root = root.to_path_buf();
         let main = FileId::new(
             None,
-            VirtualPath::within_root(&path, &root).expect("entry point should be in the root"),
+            VirtualPath::within_root(path, root).expect("entry point should be in the root"),
         );
-        let files = Mutex::new(HashMap::new());
-        Self { root, main, files }
+        let root = root.to_path_buf();
+        Self { main, root }
+    }
+    fn resolve(&self, id: FileId) -> PathBuf {
+        id.vpath()
+            .resolve(&self.root)
+            .expect("file path should resolve within root")
     }
 }
-
-static LIBRARY: LazyLock<LazyHash<Library>> = LazyLock::new(|| LazyHash::new(Library::default()));
-static FONT_BOOK: LazyLock<LazyHash<FontBook>> = LazyLock::new(|| LazyHash::new(FontBook::new()));
 
 impl World for SimpleWorld {
     fn main(&self) -> FileId {
         self.main
     }
     fn source(&self, id: FileId) -> FileResult<Source> {
-        Ok(self
-            .files
-            .lock()
-            .unwrap()
-            .entry(id)
-            .or_insert_with(|| {
-                Source::new(
-                    id,
-                    read_to_string(
-                        id.vpath()
-                            .resolve(&self.root)
-                            .expect("src files should be present"),
-                    )
-                    .expect("src files should be readable"),
-                )
-            })
-            .clone())
+        Ok(Source::new(
+            id,
+            read_to_string(self.resolve(id)).expect("file should be readable"),
+        ))
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
-            read(
-                id.vpath()
-                    .resolve(&self.root)
-                    .expect("file should be available"),
-            )
-            .expect("file should be readable"),
+            read(self.resolve(id)).expect("file should be readable"),
         ))
     }
     // dummy implementations
     fn library(&self) -> &LazyHash<Library> {
+        static LIBRARY: LazyLock<LazyHash<Library>> =
+            LazyLock::new(|| LazyHash::new(Library::default()));
         &LIBRARY
     }
     fn book(&self) -> &LazyHash<FontBook> {
-        &FONT_BOOK
+        static BOOK: LazyLock<LazyHash<FontBook>> =
+            LazyLock::new(|| LazyHash::new(FontBook::new()));
+        &BOOK
     }
     fn font(&self, _: usize) -> Option<Font> {
         None
