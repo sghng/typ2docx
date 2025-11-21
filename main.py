@@ -223,6 +223,7 @@ async def typ2docx():
 async def docx2docx():
     try:
         await run(
+            "sh",
             HERE / "merge.sh",
             cwd=DIR,
             env=environ
