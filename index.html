@@ -16,12 +16,16 @@
     ></script>
   </head>
   <body>
-    <main class="text-center" x-data="app()">
-      <h1>Typst to DOCX Converter</h1>
+    <main x-data="app()">
+      <h1
+        class="text-center bg-clip-text text-transparent! bg-gradient-to-r from-[rgb(17,86,108)] to-[#2B579A]"
+      >
+        Typst to DOCX Converter
+      </h1>
 
-      <div class="flex">
-        <label class="flex-1">
-          Select Project Folder
+      <div class="mx-auto max-w-md">
+        <label>
+          <h2>Select project folder</h2>
           <input
             type="file"
             webkitdirectory
@@ -30,8 +34,8 @@
           />
         </label>
 
-        <label class="flex-1">
-          Select Entry Point (<code>.typ</code> file)
+        <label>
+          <h2>Select entry point (<code>.typ</code> file)</h2>
           <input
             type="file"
             accept=".typ"
@@ -41,13 +45,16 @@
         </label>
       </div>
 
-      <button @click="convert()" :disabled="!entryFile || loading">
-        Convert
-      </button>
-      <div :class="stateClass" x-text="status"></div>
+      <div class="text-center">
+        <button @click="convert()" :disabled="!entryFile || loading">
+          <span x-show="!loading">Convert</span>
+          <span x-show="loading">Converting...</span>
+        </button>
+        <div x-show="status" x-text="status"></div>
+      </div>
 
       <template x-if="errorMessage">
-        <details open>
+        <details open class="text-left">
           <summary>Error Details</summary>
           <pre><code x-text="errorMessage"></code></pre>
         </details>
@@ -59,7 +66,7 @@
         Alpine.data("app", () => ({
           projectFiles: null,
           entryFile: null,
-          status: "Select a project folder to begin",
+          status: "Select a project and entry point to begin",
           stateClass: "default",
           loading: false,
           errorMessage: null,
@@ -96,10 +103,11 @@
                 }),
               });
 
-              if (!res.ok)
+              if (!res.ok) {
                 throw new Error(
                   (await res.text()) || `Server error: ${res.status}`,
                 );
+              }
               this.status = "Downloading file...";
 
               const a = document.createElement("a");
@@ -111,7 +119,7 @@
               this.status = "File downloaded!";
               this.stateClass = "success";
             } catch (e) {
-              this.status = `Error: ${e.message}`;
+              this.status = "An error occurred!";
               this.stateClass = "error";
               this.errorMessage = e.message;
             } finally {
