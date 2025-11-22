@@ -1,0 +1,125 @@
+<html>
+  <head>
+    <title>Typst to DOCX Converter</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico/css/pico.classless.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser/dist/index.global.min.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"
+    ></script>
+  </head>
+  <body>
+    <main class="text-center" x-data="app()">
+      <h1>Typst to DOCX Converter</h1>
+
+      <div class="flex">
+        <label class="flex-1">
+          Select Project Folder
+          <input
+            type="file"
+            webkitdirectory
+            multiple
+            @change="projectFiles = $event.target.files"
+          />
+        </label>
+
+        <label class="flex-1">
+          Select Entry Point (<code>.typ</code> file)
+          <input
+            type="file"
+            accept=".typ"
+            :disabled="!projectFiles"
+            @change="entryFile = $event.target.files[0]"
+          />
+        </label>
+      </div>
+
+      <button @click="convert()" :disabled="!entryFile || loading">
+        Convert
+      </button>
+      <div :class="stateClass" x-text="status"></div>
+
+      <template x-if="errorMessage">
+        <details open>
+          <summary>Error Details</summary>
+          <pre><code x-text="errorMessage"></code></pre>
+        </details>
+      </template>
+    </main>
+
+    <script>
+      document.addEventListener("alpine:init", () => {
+        Alpine.data("app", () => ({
+          projectFiles: null,
+          entryFile: null,
+          status: "Select a project folder to begin",
+          stateClass: "default",
+          loading: false,
+          errorMessage: null,
+
+          async zipFolder(files) {
+            const zip = new JSZip();
+            await Promise.all(
+              Array.from(files).map(async (f) => {
+                zip.file(f.webkitRelativePath, await f.arrayBuffer());
+              }),
+            );
+            return zip.generateAsync({ type: "base64" });
+          },
+
+          async convert() {
+            const entryPath =
+              this.entryFile.webkitRelativePath || this.entryFile.name;
+
+            try {
+              this.errorMessage = null;
+              this.loading = true;
+              this.stateClass = "loading";
+
+              this.status = "Zipping project...";
+              const zipBase64 = await this.zipFolder(this.projectFiles);
+
+              this.status = "Sending request...";
+              const res = await fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  project: zipBase64,
+                  entry: entryPath,
+                }),
+              });
+
+              if (!res.ok)
+                throw new Error(
+                  (await res.text()) || `Server error: ${res.status}`,
+                );
+              this.status = "Downloading file...";
+
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(await res.blob());
+              a.download = "output.docx";
+              a.click();
+              URL.revokeObjectURL(a.href);
+
+              this.status = "File downloaded!";
+              this.stateClass = "success";
+            } catch (e) {
+              this.status = `Error: ${e.message}`;
+              this.stateClass = "error";
+              this.errorMessage = e.message;
+            } finally {
+              this.loading = false;
+            }
+          },
+        }));
+      });
+    </script>
+  </body>
+</html>
