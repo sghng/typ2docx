@@ -10,6 +10,6 @@ RUN curl -fsSL https://bun.com/install | bash
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
 ENV PATH="/root/.local/bin:/root/.cargo/bin:$PATH"
-RUN uv tool install typ2docx -p 3.14t --upgrade
+RUN uv tool install typ2docx==0.5.1 -p 3.14t --upgrade
 
 CMD ["bun", "/app/server.js"]
