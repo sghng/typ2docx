@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
+const port = 10000;
 Bun.serve({
-  port: 10000,
+  port,
   async fetch(req) {
     switch (req.method) {
       case "POST": {
@@ -33,4 +34,4 @@ Bun.serve({
   },
 });
 
-console.log(`Server is running on http://localhost:3000`);
+console.log(`Server is running on http://localhost:${port}`);
