@@ -5,10 +5,6 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico/css/pico.classless.min.css"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/brands.min.css"
-    />
     <style type="text/tailwindcss">
       @layer base {
         *:not(i) {
@@ -36,14 +32,21 @@
 
       <p class="mx-auto max-w-2xl">
         This website is for
-        <span class="text-[rgb(35,157,173)]"><b>trial only</b></span> and it
-        runs on my scarce free-tier API quota. Please install the tool by
-        visiting
-        <a href="https://github.com/sghng/typ2docx" class="no-underline!">
-          <code><i class="fa-brands fa-github">&nbsp;</i>sghng/typ2docx</code>
-        </a>
-        if you'd like to integrate it into your workflow!<br />
+        <span class="text-[rgb(35,157,173)]"><b>trial only</b></span> as it runs
+        on my scarce free-tier API quota. Please
+        <a href="https://github.com/sghng/typ2docx#installation"
+          >install this tool</a
+        >
+        if you'd like to integrate it into your workflow!
       </p>
+      <p class="mx-auto max-w-2xl">
+        If you encountered any errors, or have any feature requests, please
+        <a href="https://github.com/sghng/typ2docx/issues/new/">
+          open an issue</a
+        >
+        on GitHub!
+      </p>
+
       <div class="mx-auto max-w-md">
         <label>
           <h3>Select project folder</h3>
@@ -73,6 +76,7 @@
           <div x-show="status" x-text="status"></div>
         </div>
       </div>
+
       <template x-if="errorMessage">
         <details open>
           <summary>Error Details</summary>
@@ -80,12 +84,46 @@
         </details>
       </template>
     </main>
+
     <footer class="mx-auto max-w-md text-center">
-      Copyright (c) 2025 Samuel Huang. Built with
-      <a href="https://picocss.com/"><code>PicoCSS</code></a> and
-      <a href="https://alpinejs.dev/"><code>Alpine.js</code></a
-      >.
+      <p>
+        <a @click.prevent="$refs.modal.showModal()">What happens to my data?</a>
+      </p>
+      <p>
+        Copyright (c) 2025 Samuel Huang. Built with
+        <a href="https://picocss.com/"><code>PicoCSS</code></a> and
+        <a href="https://alpinejs.dev/"><code>Alpine.js</code></a
+        >.
+      </p>
     </footer>
+
+    <dialog x-ref="modal">
+      <article>
+        <h2 class="text-center">What happens to my data?</h2>
+        <p>
+          Your data will be sent to a web service container hosted on
+          <a href="https://render.com">Render</a>, in which runs the
+          <a href="https://pypi.org/project/typ2docx/">typ2docx</a>
+          tool, which relies on sending the compiled PDF of your project to
+          <a
+            href="https://developer.adobe.com/document-services/apis/pdf-services/"
+          >
+            Adobe PDF Services</a
+          >
+          for conversion.
+        </p>
+        <p>
+          Your files are not stored by this tool and are deleted after
+          conversion. The source code for the converter, this website, and the
+          web service are available on
+          <a href="https://github.com/sghng/typ2docx"></a> GitHub.
+        </p>
+        <form class="text-center" method="dialog">
+          <button>Got it!</button>
+        </form>
+      </article>
+    </dialog>
+
     <script>
       document.addEventListener("alpine:init", () => {
         Alpine.data("app", () => ({
