@@ -25,18 +25,22 @@ Bun.serve({
 						.env(process.env)
 						.quiet()
 						.nothrow();
+				
+				if (exitCode) {
+					await rm(dir, { recursive: true, force: true });
+					return new Response(stderr, { status: 500 });
+				}
+				
 				const output = await readFile(`${dir}/output.docx`);
 				await rm(dir, { recursive: true, force: true });
-				return exitCode
-					? new Response(stderr, { status: 500 })
-					: new Response(output, {
-							headers: {
-								"Content-Type":
-									"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-								"Content-Disposition":
-									"attachment; filename=output.docx",
-							},
-						});
+				return new Response(output, {
+					headers: {
+						"Content-Type":
+							"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+						"Content-Disposition":
+							"attachment; filename=output.docx",
+					},
+				});
 			}
 			case "GET":
 				return new Response(Bun.file("index.html"));
