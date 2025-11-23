@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { rm, mkdtemp, writeFile } from "fs/promises";
+import { rm, mkdtemp, writeFile, readFile } from "fs/promises";
 
 const port = 10000;
 Bun.serve({
@@ -20,15 +20,16 @@ Bun.serve({
 				await Bun.$`cd ${dir} && unzip -o project.zip && rm project.zip`
 					.quiet()
 					.nothrow();
-				const { stdout, stderr, exitCode } =
-					await Bun.$`cd ${dir} && typ2docx ${entry} -e pdfservices -- --root .`
+				const { stderr, exitCode } =
+					await Bun.$`cd ${dir} && typ2docx ${entry} -o output.docx -e pdfservices -- --root .`
 						.env(process.env)
 						.quiet()
 						.nothrow();
+				const output = await readFile(`${dir}/output.docx`);
 				await rm(dir, { recursive: true, force: true });
 				return exitCode
 					? new Response(stderr, { status: 500 })
-					: new Response(stdout, {
+					: new Response(output, {
 							headers: {
 								"Content-Type":
 									"application/vnd.openxmlformats-officedocument.wordprocessingml.document",

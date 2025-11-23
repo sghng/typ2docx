@@ -16,11 +16,11 @@ RUN curl -L "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
 
 FROM oven/bun:canary-slim
 WORKDIR /app
-COPY server.js /app/server.js
+COPY server.ts /app/server.ts
 COPY index.html /app/index.html
 RUN apt update && apt install -y --no-install-recommends unzip rsync zip
 COPY --from=typst /usr/local/cargo/bin/typst /usr/local/bin/typst
 COPY --from=pandoc /pandoc-*/bin/pandoc /usr/local/bin/pandoc
 COPY --from=typ2docx /root/.local/share/uv/ /root/.local/share/uv/
 COPY --from=typ2docx /root/.local/bin/typ2docx /usr/local/bin/typ2docx
-CMD ["bun", "server.js"]
+CMD ["bun", "server.ts"]
