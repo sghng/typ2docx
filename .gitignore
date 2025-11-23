@@ -1,4 +1,5 @@
 .idea/
+.DS_Store
 
 .env
 
@@ -7,8 +8,10 @@ Cargo.lock
 
 __pycache__/
 dist/
-
 uv.lock
+
+bun.lock
+node_modules/
 
 .typ2docx/
 *.docx
