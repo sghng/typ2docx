@@ -71,19 +71,48 @@
           loading: false,
           errorMessage: null,
 
+          getEntryPath() {
+            if (!this.entryFile || !this.projectFiles) return "main.typ";
+            
+            // First, try to find the entry file in projectFiles
+            // Match by name (and optionally size for better accuracy)
+            const entryInProject = Array.from(this.projectFiles).find(
+              (f) => f.name === this.entryFile.name
+            );
+            
+            if (entryInProject?.webkitRelativePath) {
+              // Strip first path segment (the directory name)
+              return entryInProject.webkitRelativePath.split("/").slice(1).join("/");
+            }
+            
+            // Fallback: use entryFile's webkitRelativePath if available
+            if (this.entryFile.webkitRelativePath) {
+              const parts = this.entryFile.webkitRelativePath.split("/");
+              // If it looks like it has the directory structure, strip first segment
+              if (parts.length > 1) {
+                return parts.slice(1).join("/");
+              }
+              return this.entryFile.webkitRelativePath;
+            }
+            
+            // Last resort: just the filename
+            return this.entryFile.name;
+          },
+
           async zipFolder(files) {
             const zip = new JSZip();
             await Promise.all(
               Array.from(files).map(async (f) => {
-                zip.file(f.webkitRelativePath, await f.arrayBuffer());
+                // Strip first path segment (the directory name)
+                const path = f.webkitRelativePath.split("/").slice(1).join("/");
+                zip.file(path, await f.arrayBuffer());
               }),
             );
             return zip.generateAsync({ type: "base64" });
           },
 
           async convert() {
-            const entryPath =
-              this.entryFile.webkitRelativePath || this.entryFile.name;
+            const entryPath = this.getEntryPath();
 
             try {
               this.errorMessage = null;

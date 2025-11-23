@@ -10,9 +10,6 @@ __pycache__/
 dist/
 uv.lock
 
-node_modules/
-bun.lock
-
 .typ2docx/
 *.docx
 *.pdf
