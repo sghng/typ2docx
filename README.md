@@ -20,9 +20,6 @@ publication, please consider crediting this project or sponsoring me :heart:.
 
 ### Prerequisite
 
-To compile the Rust extension used in this tool, you will need Rust toolchain,
-which can be installed via [`rustup`](https://rustup.rs/).
-
 This tool is distributed via PyPI. Installation via
 [`uv`](https://docs.astral.sh/uv/getting-started/installation/) is recommended.
 You may also use `pipx` or other similar tools to install and run this program.
@@ -41,7 +38,7 @@ uv tool install typ2docx
 > [!NOTE]
 >
 > The package installation process is expected to take some time, since it
-> requires compiling a Rust library. Read along to know why.
+> requires compiling a Rust extension. Read along to know why.
 
 If you want to tinker with this program:
 
