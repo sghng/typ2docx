@@ -26,10 +26,10 @@
       src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"
     ></script>
   </head>
-  <body>
-    <main x-data="app()">
+  <body class="min-h-screen flex flex-col" x-data="app()">
+    <main class="flex-grow">
       <h1
-        class="text-center bg-clip-text text-transparent! bg-gradient-to-r from-[rgb(17,86,108)] to-[#2B579A]"
+        class="text-center bg-clip-text text-transparent! bg-gradient-to-r from-[rgb(35,157,173)] to-[#2B579A]"
       >
         Typst to DOCX Converter
       </h1>
@@ -46,7 +46,7 @@
       </p>
       <div class="mx-auto max-w-md">
         <label>
-          <h2>Select project folder</h2>
+          <h3>Select project folder</h3>
           <input
             type="file"
             webkitdirectory
@@ -56,7 +56,7 @@
         </label>
 
         <label>
-          <h2>Select entry point (<code>.typ</code> file)</h2>
+          <h3>Select entry point (<code>.typ</code> file)</h3>
           <input
             type="file"
             accept=".typ"
@@ -64,16 +64,15 @@
             @change="entryFile = $event.target.files[0]"
           />
         </label>
-      </div>
 
-      <div class="text-center">
-        <button @click="convert()" :disabled="!projectFiles || loading">
-          <span x-show="!loading">Convert</span>
-          <span x-show="loading">Converting...</span>
-        </button>
-        <div x-show="status" x-text="status"></div>
+        <div class="text-center">
+          <button @click="convert()" :disabled="!projectFiles || loading">
+            <span x-show="!loading">Convert</span>
+            <span x-show="loading">Converting...</span>
+          </button>
+          <div x-show="status" x-text="status"></div>
+        </div>
       </div>
-
       <template x-if="errorMessage">
         <details open>
           <summary>Error Details</summary>
