@@ -3,7 +3,8 @@ RUN apt update && apt install -y --no-install-recommends curl
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 RUN /root/.local/bin/uv tool install typ2docx --verbose
 
-FROM rust:slim AS typst
+# align with oven/bun:slim
+FROM rust:slim-bookworm AS typst
 RUN apt update && apt install -y --no-install-recommends pkg-config libssl-dev
 RUN cargo install typst-cli
 
@@ -14,7 +15,7 @@ ARG REPO=https://github.com/jgm/pandoc
 ARG FILE=pandoc-${VERSION}-${PLATFORM}.tar.gz
 RUN curl -L "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
 
-FROM oven/bun:canary-slim
+FROM oven/bun:slim
 WORKDIR /app
 COPY server.ts /app/server.ts
 COPY index.html /app/index.html
