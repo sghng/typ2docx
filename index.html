@@ -5,6 +5,17 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico/css/pico.classless.min.css"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/brands.min.css"
+    />
+    <style type="text/tailwindcss">
+      @layer base {
+        *:not(i) {
+          font-family: theme("fontFamily.mono") !important;
+        }
+      }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser/dist/index.global.min.js"></script>
     <script
       defer
