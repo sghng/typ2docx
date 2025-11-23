@@ -1,4 +1,7 @@
 #!/usr/bin/env bun
+import { mkdtemp, rm } from "fs/promises";
+import AdmZip from "adm-zip";
+
 const port = 10000;
 Bun.serve({
 	port,
@@ -7,24 +10,41 @@ Bun.serve({
 			case "POST": {
 				const { project, entry } = await req.json();
 				if (!project)
-					return new Response("Missing 'project' field", { status: 400 });
-				const dir = (await Bun.$`mktemp -d`.text()).trim();
-				await Bun.write(`${dir}/project.zip`, Buffer.from(project, "base64"));
-				await Bun.$`unzip -q ${dir}/project.zip -d ${dir}`.quiet();
-				const { stdout, stderr, exitCode } =
-					await Bun.$`typ2docx ${dir}/${entry ?? ""} -e pdfservices -- --root ${dir}`
-						.env(process.env)
-						.quiet()
-						.nothrow();
-				return exitCode
-					? new Response(`${stderr}`, { status: 500 })
-					: new Response(stdout, {
-							headers: {
-								"Content-Type":
-									"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-								"Content-Disposition": "attachment; filename=output.docx",
-							},
-						});
+					return new Response("Missing 'project' field", {
+						status: 400,
+					});
+				const zip = new AdmZip(Buffer.from(project, "base64"));
+				const dir = await mkdtemp("");
+				try {
+					await Promise.all(
+						zip
+							.getEntries()
+							.filter((e) => !e.isDirectory)
+							.map((e) =>
+								Bun.write(
+									`${dir}/${e.entryName.split("/").pop()}`,
+									e.getData(),
+								),
+							),
+					);
+					const { stdout, stderr, exitCode } =
+						await Bun.$`cd ${dir} && typ2docx ${entry || "main.typ"} -e pdfservices`
+							.env(process.env)
+							.quiet()
+							.nothrow();
+					return exitCode
+						? new Response(stderr, { status: 500 })
+						: new Response(stdout, {
+								headers: {
+									"Content-Type":
+										"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+									"Content-Disposition":
+										"attachment; filename=output.docx",
+								},
+							});
+				} finally {
+					rm(dir, { recursive: true });
+				}
 			}
 			case "GET":
 				return new Response(Bun.file("index.html"));
