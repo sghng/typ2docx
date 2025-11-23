@@ -221,13 +221,11 @@ async def typ2docx():
 
 
 async def docx2docx():
+    shell, ext = ("pwsh", "ps1") if platform == "win32" else ("sh", "sh")
     try:
         await run(
-            *(
-                ("pwsh", HERE / "merge.ps1")
-                if platform == "win32"
-                else ("sh", HERE / "merge.sh")
-            ),
+            shell,
+            HERE / f"merge.{ext}",
             cwd=DIR,
             env=environ
             | {"PATH": f"{Path(executable).parent}{pathsep}{environ['PATH']}"},
