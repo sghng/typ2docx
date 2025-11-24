@@ -4,6 +4,11 @@
 
 [unreleased]: https://github.com/sghng/typ2docx/compare/v0.5.0...main
 
+### Added
+
+- Initial support for Windows through ported PowerShell scripting for merging
+  documents. (#26)
+
 ## [0.5.0] - 2025-11-20
 
 [0.5.0]: https://github.com/sghng/typ2docx/compare/v0.4.0...v0.5.0
