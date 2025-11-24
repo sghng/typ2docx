@@ -1,9 +1,12 @@
 #!/usr/bin/env pwsh
 $ErrorActionPreference = "Stop"
-Remove-Item "a.d", "b.d", "out.d" -Recurse -Force -ErrorAction SilentlyContinue
-Expand-Archive "a.docx" -DestinationPath "a.d" -Force
-Expand-Archive "b.docx" -DestinationPath "b.d" -Force
-robocopy "a.d" "out.d" /MIR | Out-Null
+'a', 'b' | ForEach-Object {
+    Remove-Item "$_.d" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item "$_.docx" "$_.zip" -Force
+    Expand-Archive "$_.zip" "$_.d"
+}
+robocopy "a.d" "out.d" /mir | Out-Null
 python -m saxon | Out-File "out.d/word/document.xml"
+if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit code $LASTEXITCODE" }
 Push-Location "out.d"
-Compress-Archive "*" -DestinationPath "../out.docx" -Force
+Compress-Archive -Force "*" "../out.docx"
