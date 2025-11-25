@@ -4,11 +4,21 @@
 
 [unreleased]: https://github.com/sghng/typ2docx/compare/v0.5.0...main
 
+## [0.6.0]
+
+[0.6.0]: https://github.com/sghng/typ2docx/compare/v0.5.0...v0.6.0
+
 ### Added
 
+- A web app for trying out this tool. (#24)
 - Initial support for Windows through ported PowerShell scripting for merging
   documents. (#26)
 - Support package import. (#28)
+
+### Fixed
+
+- Scripts for merging Word documents are now invoked explicitly with
+  corresponding interpreter, addressing script permission issues.
 
 ## [0.5.0] - 2025-11-20
 

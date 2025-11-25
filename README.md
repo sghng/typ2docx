@@ -22,6 +22,12 @@ publication, please consider crediting this project or sponsoring me. :heart:
 
 ## Installation
 
+> [!NOTE]
+>
+> You may now try this tool without installing through [a web app](https://typ2docx.sgh.ng).
+> Note that it runs on my scarce free-tier API quota, so please install this
+> tool if you intend to use it more than once!
+
 ### Prerequisite
 
 This tool is distributed via PyPI. Installation via
