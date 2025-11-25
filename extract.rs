@@ -2,7 +2,6 @@ use std::{
     fs::{read, read_to_string},
     ops::ControlFlow,
     path::{Path, PathBuf},
-    sync::LazyLock,
 };
 
 use pyo3::{pyfunction, pymodule};
@@ -19,6 +18,10 @@ use typst::{
     utils::LazyHash,
 };
 use typst_eval::eval;
+use typst_kit::{
+    download::{Downloader, ProgressSink},
+    package::PackageStorage,
+};
 
 #[pymodule(gil_used = false)]
 mod extract {
@@ -66,10 +69,14 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     equations
 }
 
-/// A minimal World implementation for evaluation and extraction
+/// A minimal World implementation for evaluation and extraction, inspired by SystemWorld in
+/// typst-cli.
 struct SimpleWorld {
     main: FileId,
     root: PathBuf,
+    package_storage: PackageStorage,
+    library: LazyHash<Library>,
+    book: LazyHash<FontBook>,
 }
 
 impl SimpleWorld {
@@ -79,12 +86,34 @@ impl SimpleWorld {
             VirtualPath::within_root(path, root).expect("entry point should be in the root"),
         );
         let root = root.to_path_buf();
-        Self { main, root }
+        let package_storage = PackageStorage::new(
+            None,
+            None,
+            Downloader::new(concat!(
+                env!("CARGO_PKG_NAME"),
+                "/",
+                env!("CARGO_PKG_VERSION")
+            )),
+        );
+        let library = Library::default().into();
+        let book = FontBook::default().into();
+        Self {
+            main,
+            root,
+            package_storage,
+            library,
+            book,
+        }
     }
     fn resolve(&self, id: FileId) -> PathBuf {
-        id.vpath()
-            .resolve(&self.root)
-            .expect("file path should resolve within root")
+        let root = if let Some(spec) = id.package() {
+            self.package_storage
+                .prepare_package(spec, &mut ProgressSink)
+                .expect("package should be prepared")
+        } else {
+            self.root.clone()
+        };
+        id.vpath().resolve(&root).expect("file path should resolve")
     }
 }
 
@@ -95,24 +124,19 @@ impl World for SimpleWorld {
     fn source(&self, id: FileId) -> FileResult<Source> {
         Ok(Source::new(
             id,
-            read_to_string(self.resolve(id)).expect("file should be readable"),
+            read_to_string(self.resolve(id)).expect("file should be readable as string"),
         ))
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
-            read(self.resolve(id)).expect("file should be readable"),
+            read(self.resolve(id)).expect("file should be readable as bytes"),
         ))
     }
-    // dummy implementations
     fn library(&self) -> &LazyHash<Library> {
-        static LIBRARY: LazyLock<LazyHash<Library>> =
-            LazyLock::new(|| LazyHash::new(Library::default()));
-        &LIBRARY
+        &self.library
     }
     fn book(&self) -> &LazyHash<FontBook> {
-        static BOOK: LazyLock<LazyHash<FontBook>> =
-            LazyLock::new(|| LazyHash::new(FontBook::new()));
-        &BOOK
+        &self.book
     }
     fn font(&self, _: usize) -> Option<Font> {
         None
