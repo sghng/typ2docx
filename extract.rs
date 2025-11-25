@@ -2,7 +2,6 @@ use std::{
     fs::{read, read_to_string},
     ops::ControlFlow,
     path::{Path, PathBuf},
-    sync::LazyLock,
 };
 
 use pyo3::{pyfunction, pymodule};
@@ -76,6 +75,8 @@ struct SimpleWorld {
     main: FileId,
     root: PathBuf,
     package_storage: PackageStorage,
+    library: LazyHash<Library>,
+    book: LazyHash<FontBook>,
 }
 
 impl SimpleWorld {
@@ -94,10 +95,14 @@ impl SimpleWorld {
                 env!("CARGO_PKG_VERSION")
             )),
         );
+        let library = Library::default().into();
+        let book = FontBook::default().into();
         Self {
             main,
             root,
             package_storage,
+            library,
+            book,
         }
     }
     fn resolve(&self, id: FileId) -> PathBuf {
@@ -127,16 +132,11 @@ impl World for SimpleWorld {
             read(self.resolve(id)).expect("file should be readable as bytes"),
         ))
     }
-    // dummy implementations
     fn library(&self) -> &LazyHash<Library> {
-        static LIBRARY: LazyLock<LazyHash<Library>> =
-            LazyLock::new(|| LazyHash::new(Library::default()));
-        &LIBRARY
+        &self.library
     }
     fn book(&self) -> &LazyHash<FontBook> {
-        static BOOK: LazyLock<LazyHash<FontBook>> =
-            LazyLock::new(|| LazyHash::new(FontBook::new()));
-        &BOOK
+        &self.book
     }
     fn font(&self, _: usize) -> Option<Font> {
         None
