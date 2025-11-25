@@ -8,6 +8,7 @@
 
 - Initial support for Windows through ported PowerShell scripting for merging
   documents. (#26)
+- Support package import. (#28)
 
 ## [0.5.0] - 2025-11-20
 

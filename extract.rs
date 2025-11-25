@@ -119,12 +119,12 @@ impl World for SimpleWorld {
     fn source(&self, id: FileId) -> FileResult<Source> {
         Ok(Source::new(
             id,
-            read_to_string(self.resolve(id)).expect("file should be readable"),
+            read_to_string(self.resolve(id)).expect("file should be readable as string"),
         ))
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
-            read(self.resolve(id)).expect("file should be readable"),
+            read(self.resolve(id)).expect("file should be readable as bytes"),
         ))
     }
     // dummy implementations
