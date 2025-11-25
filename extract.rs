@@ -100,6 +100,7 @@ impl World for SimpleWorld {
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
+            // BUG: panic here. can't resolve files that are in packages
             read(self.resolve(id)).expect("file should be readable"),
         ))
     }
