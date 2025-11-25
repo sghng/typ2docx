@@ -1,22 +1,26 @@
-# `typ2docx`: Convert Typst Project to Microsoft Word Format
+# `typ2docx`: Convert Math-Rich Typst Project to Microsoft Word Format
 
 `typ2docx` is a command line tool that converts a Typst project to Microsoft
-Word `.docx` format, with tables, cross-references, most of the styles, and most
-importantly the math markups preserved.
+Word `.docx` format, with tables, cross-references, most of the styles, and
+most importantly the math markups preserved. It combines the mature,
+comprehensive document conversion of standard PDF-to-Word tools with Pandoc's
+high-quality mathematical formula export.
 
 You're encouraged to read this document thoroughly before using it, as I
 employed many non-trivial hacks for this non-trivial problem! (It involves 6
 different programming languages!)
 
 If this tool enhanced your workflow, especially if it helped with your academic
-publication, please consider crediting this project or sponsoring me :heart:.
-
-## Installation
+publication, please consider crediting this project or sponsoring me. :heart:
 
 > [!NOTE]
 >
-> Currently this tool only supports macOS and Linux systems, as it requires a
-> `bash` script and some cli dependencies!
+> If you don't care about the quality of math export, this tool is no different
+> from other PDF-to-Word converter.
+>
+> If your project doesn't use any non-basic features in Typst, try Pandoc first.
+
+## Installation
 
 ### Prerequisite
 
@@ -79,6 +83,15 @@ there are two supported engines:
   engine. It uses Acrobat desktop app with some GUI automation to export a PDF
   to `.docx`. Either the free Acrobat Reader or the paid Acrobat Pro would work.
   This is only supported on macOS now.
+
+  > [!WARNING]
+  >
+  > GUI automation is quite unstable as of now, as it relies on finding and
+  > clicking the right button at the right moment. Launching Acrobat before
+  > starting this tool can be helpful. If it doesn't work the first time,
+  > retrying a few times might solve it. Be sure to close any dialogs that
+  > popped up before retrying.
+
 - **[Adobe PDFServices API](https://developer.adobe.com/document-services/apis/pdf-services/)**:
   Pass `-e pdfservices` to use this engine. It requires internet connection and
   valid PDFServices API credentials. This service comes with 500 free

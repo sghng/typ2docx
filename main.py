@@ -169,6 +169,12 @@ async def pdf2docx():
                     "[bold red]Error:[/bold red] "
                     "Failed to convert PDF -> DOCX with Acrobat"
                 )
+                console.print(
+                    "[bold blue]Note:[/bold blue] "
+                    "Acrobat conversion relies on GUI automation, which is quite unstable. "
+                    "You may need a few attempts to make it work. "
+                    "Make sure you have closed all dialogs in Acrobat before retry."
+                )
                 raise Exit(1)
         case _:
             raise NotImplementedError("More engines support incoming!")
