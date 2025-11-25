@@ -19,6 +19,10 @@ use typst::{
     utils::LazyHash,
 };
 use typst_eval::eval;
+use typst_kit::{
+    download::{Downloader, ProgressSink},
+    package::PackageStorage,
+};
 
 #[pymodule(gil_used = false)]
 mod extract {
@@ -66,10 +70,12 @@ fn extract_equations(path: &str, root: Option<&str>) -> Vec<String> {
     equations
 }
 
-/// A minimal World implementation for evaluation and extraction
+/// A minimal World implementation for evaluation and extraction, inspired by SystemWorld in
+/// typst-cli.
 struct SimpleWorld {
     main: FileId,
     root: PathBuf,
+    package_storage: PackageStorage,
 }
 
 impl SimpleWorld {
@@ -79,12 +85,30 @@ impl SimpleWorld {
             VirtualPath::within_root(path, root).expect("entry point should be in the root"),
         );
         let root = root.to_path_buf();
-        Self { main, root }
+        let package_storage = PackageStorage::new(
+            None,
+            None,
+            Downloader::new(concat!(
+                env!("CARGO_PKG_NAME"),
+                "/",
+                env!("CARGO_PKG_VERSION")
+            )),
+        );
+        Self {
+            main,
+            root,
+            package_storage,
+        }
     }
     fn resolve(&self, id: FileId) -> PathBuf {
-        id.vpath()
-            .resolve(&self.root)
-            .expect("file path should resolve within root")
+        let root = if let Some(spec) = id.package() {
+            self.package_storage
+                .prepare_package(spec, &mut ProgressSink)
+                .expect("package should be prepared")
+        } else {
+            self.root.clone()
+        };
+        id.vpath().resolve(&root).expect("file path should resolve")
     }
 }
 
@@ -100,7 +124,6 @@ impl World for SimpleWorld {
     }
     fn file(&self, id: FileId) -> FileResult<Bytes> {
         Ok(Bytes::new(
-            // BUG: panic here. can't resolve files that are in packages
             read(self.resolve(id)).expect("file should be readable"),
         ))
     }
