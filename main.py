@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 from rich.console import Console
 from typer import Argument, Exit, Option, Typer
 
-from extract import extract  # ty: ignore[unresolved-import]
+from extract import extract
 from utils import TempFile, WorkingDirectory, run, syncify
 
 app = Typer()
