@@ -1,5 +1,6 @@
 from asyncio import sleep
 from dataclasses import dataclass
+from functools import singledispatch
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
@@ -61,81 +62,111 @@ async def typ2pdf(ctx: Context):
         raise Exit(1)
 
 
-async def pdf2docx(ctx: Context):
-    match ctx.engine:
+class Engine:
+    pass
+
+
+class PdfServices(Engine):
+    pass
+
+
+class Acrobat(Engine):
+    pass
+
+
+def get_engine(name: str) -> Engine:
+    match name:
         case "pdfservices":
-            from pdfservices import export
-
-            ctx.console.print(
-                "[bold green]Converting[/bold green] "
-                "PDF -> DOCX with Adobe PDFServices API"
-            )
-
-            try:
-                await run(export, ctx.dir / "a.pdf")
-            except ValueError:
-                ctx.console.print(
-                    "[bold red]Error:[/bold red] Make sure you have "
-                    "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
-                    "set in environment!",
-                )
-                raise Exit(1)
-            except RuntimeError as e:
-                ctx.console.print(
-                    "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX "
-                    f"with Adobe PDFServices API: {e}"
-                )
-                raise Exit(1)
+            return PdfServices()
         case "acrobat":
-            ctx.console.print(
-                "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
-            )
-
-            script = (
-                Path.home()
-                / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
-                / "typ2docx.js"
-            )
-            script.parent.mkdir(exist_ok=True)
-            script.unlink(missing_ok=True)
-            # TODO: a potential race condition.
-            script.symlink_to(ctx.dir / "typ2docx.js")
-
-            injector = PdfWriter(ctx.dir / "a.pdf")
-            # TODO: preprocess template
-            injector.add_js((ctx.here / "export.js").read_text())
-            with open(ctx.dir / "a-injected.pdf", "wb") as f:
-                injector.write(f)
-
-            try:
-                await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
-                # TODO: detect callback
-                await sleep(5)
-                # TODO: get real path
-                # TODO: this has a slight chance of failing if multiple conversions are
-                # running at the same time
-                # TODO: get the dir for non Pro version of Acrobat
-                # TODO: closing Acrobat afterwards
-                move(
-                    Path.home()
-                    / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
-                    / "typ2docx.docx",
-                    ctx.dir / "a.docx",
-                )
-            except CalledProcessError:
-                ctx.console.print(
-                    "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
-                )
-                raise Exit(1)
-            except FileNotFoundError:
-                ctx.console.print(
-                    "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
-                )
-                raise Exit(1)
-            finally:
-                script.unlink(missing_ok=True)
+            return Acrobat()
         case _:
             raise NotImplementedError("More engines support incoming!")
+
+
+@singledispatch
+async def _pdf2docx(engine: Engine, ctx: Context):
+    raise NotImplementedError(f"Unknown engine: {engine}")
+
+
+@_pdf2docx.register
+async def _(engine: PdfServices, ctx: Context):
+    from pdfservices import export
+
+    ctx.console.print(
+        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDFServices API"
+    )
+
+    try:
+        await run(export, ctx.dir / "a.pdf")
+    except ValueError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Make sure you have "
+            "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
+            "set in environment!",
+        )
+        raise Exit(1)
+    except RuntimeError as e:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX "
+            f"with Adobe PDFServices API: {e}"
+        )
+        raise Exit(1)
+
+
+@_pdf2docx.register
+async def _(engine: Acrobat, ctx: Context):
+    ctx.console.print(
+        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
+    )
+
+    script = (
+        Path.home()
+        / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
+        / "typ2docx.js"
+    )
+    script.parent.mkdir(exist_ok=True)
+    script.unlink(missing_ok=True)
+    # TODO: a potential race condition.
+    script.symlink_to(ctx.dir / "typ2docx.js")
+
+    injector = PdfWriter(ctx.dir / "a.pdf")
+    # TODO: preprocess template
+    injector.add_js((ctx.here / "export.js").read_text())
+    with open(ctx.dir / "a-injected.pdf", "wb") as f:
+        injector.write(f)
+
+    try:
+        await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+        # TODO: detect callback
+        await sleep(5)
+        # TODO: get real path
+        # TODO: this has a slight chance of failing if multiple conversions are
+        # running at the same time
+        # TODO: get the dir for non Pro version of Acrobat
+        # TODO: closing Acrobat afterwards
+        move(
+            Path.home()
+            / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
+            / "typ2docx.docx",
+            ctx.dir / "a.docx",
+        )
+    except CalledProcessError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
+        )
+        raise Exit(1)
+    except FileNotFoundError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
+        )
+        raise Exit(1)
+    finally:
+        script.unlink(missing_ok=True)
+
+
+async def pdf2docx(ctx: Context):
+    await _pdf2docx(get_engine(ctx.engine), ctx)
 
 
 async def typ2typ(ctx: Context):
