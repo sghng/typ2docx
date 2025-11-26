@@ -184,10 +184,10 @@ async def pdf2docx():
                 # TODO: detect callback
                 await sleep(5)
                 # TODO: get real path
-                # TODO: this has a slight change of failing if multiple conversions are
+                # TODO: this has a slight chance of failing if multiple conversions are
                 # running at the same time
                 # TODO: get the dir for non Pro version of Acrobat
-                # TODO: closing Acrobat after wards
+                # TODO: closing Acrobat afterwards
                 move(
                     Path.home()
                     / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
