@@ -1,0 +1,10 @@
+{
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"overrides": [
+		{
+			"includes": ["export.js", "typ2docx.js"],
+			"linter": { "rules": { "style": { "useTemplate": "off" } } }
+		}
+	]
+}
