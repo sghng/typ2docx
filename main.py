@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from asyncio import TaskGroup
+from asyncio import TaskGroup, sleep
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
@@ -157,23 +157,40 @@ async def pdf2docx():
                 )
                 raise Exit(1)
         case "acrobat":
+            # TODO: trusted function installation
+            from pypdf import PdfWriter
+
             console.print(
                 "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
             )
+            writer = PdfWriter(DIR / "a.pdf")
+            # TODO: preprocess template
+            writer.add_js((HERE / "export.js").read_text())
+            with open(DIR / "a-injected.pdf", "wb") as f:
+                writer.write(f)
             try:
-                await run(
-                    "osascript", HERE / "acrobat.applescript", DIR / "a.pdf", cwd=DIR
+                await run("open", "-a", "Adobe Acrobat", DIR / "a-injected.pdf")
+                # TODO: detect callback
+                await sleep(5)
+                # TODO: get real path
+                # TODO: this has a slight change of failing if multiple conversions are
+                # running at the same time
+                # TODO: get the dir for non Pro version of Acrobat
+                # TODO: closing Acrobat after wards
+                move(
+                    Path.home()
+                    / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
+                    / "typ2docx.docx",
+                    DIR / "a.docx",
                 )
             except CalledProcessError:
                 console.print(
-                    "[bold red]Error:[/bold red] "
-                    "Failed to convert PDF -> DOCX with Acrobat"
+                    "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
                 )
+                raise Exit(1)
+            except FileNotFoundError:
                 console.print(
-                    "[bold blue]Note:[/bold blue] "
-                    "Acrobat conversion relies on GUI automation, which is quite unstable. "
-                    "You may need a few attempts to make it work. "
-                    "Make sure you have closed all dialogs in Acrobat before retry."
+                    "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
                 )
                 raise Exit(1)
         case _:

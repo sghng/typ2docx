@@ -12,7 +12,7 @@ function main() {
 	console.println(
 		"TYP2DOCX: installed trusted function version: " + typ2DocxVersion
 	);
-	typ2DocxExport.call(this, "test.docx");
+	typ2DocxExport.call(this, "typ2docx.docx");
 }
 
 app.setTimeOut("main()", 1); // queue the function call

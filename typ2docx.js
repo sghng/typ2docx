@@ -1,8 +1,7 @@
-typ2DocxVersion = "0.6.0";
-typ2DocxExport = app.trustedFunction(function (filename) {
+// biome-ignore lint/correctness/noUnusedVariables: attached to Acrobat globals
+var typ2DocxExport = app.trustedFunction(function (filename) {
 	app.beginPriv();
-	path = app.getPath("user", "temp") + "/" + filename;
-	app.alert(path);
-	this.saveAs({ cPath: path });
+	const path = app.getPath("user", "temp") + "/" + filename;
+	this.saveAs({ cPath: path, cConvID: "com.adobe.acrobat.docx" });
 	app.endPriv();
 });
