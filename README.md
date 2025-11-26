@@ -86,18 +86,10 @@ You need to specify the engine used to convert a PDF to `.docx` file. Currently
 there are two supported engines:
 
 - **[Adobe Acrobat](https://acrobat.adobe.com)**: Pass `-e acrobat` to use this
-  engine. It uses Acrobat desktop app with some GUI automation to export a PDF
-  to `.docx`. Either the free Acrobat Reader or the paid Acrobat Pro would work.
-  This is only supported on macOS now.
-
-  > [!WARNING]
-  >
-  > GUI automation is quite unstable as of now, as it relies on finding and
-  > clicking the right button at the right moment. Launching Acrobat before
-  > starting this tool can be helpful. If it doesn't work the first time,
-  > retrying a few times might solve it. Be sure to close any dialogs that
-  > popped up before retrying.
-
+  engine. It uses Acrobat's JavaScript API to export a PDF to `.docx`. Either
+  the free Acrobat Reader or the paid Acrobat Pro would work. This is only
+  supported on macOS now. Due to a known issue, you may have to launch Acrobat
+  manually before using this tool.
 - **[Adobe PDFServices API](https://developer.adobe.com/document-services/apis/pdf-services/)**:
   Pass `-e pdfservices` to use this engine. It requires internet connection and
   valid PDFServices API credentials. This service comes with 500 free

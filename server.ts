@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { rm, mkdtemp, writeFile, readFile } from "fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 
 const port = 10000;
 Bun.serve({
@@ -13,32 +13,28 @@ Bun.serve({
 						status: 400,
 					});
 				const dir = await mkdtemp("/tmp/typ2docx-");
-				await writeFile(
-					`${dir}/project.zip`,
-					Buffer.from(project, "base64"),
-				);
+				await writeFile(`${dir}/project.zip`, Buffer.from(project, "base64"));
 				await Bun.$`cd ${dir} && unzip -o project.zip && rm project.zip`
 					.quiet()
 					.nothrow();
 				const { stderr, exitCode } =
-					await Bun.$`cd ${dir} && typ2docx ${entry} -o output.docx -e pdfservices -- --root .`
+					await Bun.$`cd ${dir} && typ2docx ${entry} -o output.docx -e pdfservices`
 						.env(process.env)
 						.quiet()
 						.nothrow();
-				
+
 				if (exitCode) {
 					await rm(dir, { recursive: true, force: true });
 					return new Response(stderr, { status: 500 });
 				}
-				
+
 				const output = await readFile(`${dir}/output.docx`);
 				await rm(dir, { recursive: true, force: true });
 				return new Response(output, {
 					headers: {
 						"Content-Type":
 							"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-						"Content-Disposition":
-							"attachment; filename=output.docx",
+						"Content-Disposition": "attachment; filename=output.docx",
 					},
 				});
 			}
