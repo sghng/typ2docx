@@ -157,17 +157,28 @@ async def pdf2docx():
                 )
                 raise Exit(1)
         case "acrobat":
-            # TODO: trusted function installation
-            from pypdf import PdfWriter
-
             console.print(
                 "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
             )
-            writer = PdfWriter(DIR / "a.pdf")
+
+            from pypdf import PdfWriter
+
+            script = (
+                Path.home()
+                / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
+                / "typ2docx.js"
+            )
+            script.parent.mkdir(exist_ok=True)
+            script.unlink(missing_ok=True)
+            # TODO: a potential race condition.
+            script.symlink_to(DIR / "typ2docx.js")
+
+            injector = PdfWriter(DIR / "a.pdf")
             # TODO: preprocess template
-            writer.add_js((HERE / "export.js").read_text())
+            injector.add_js((HERE / "export.js").read_text())
             with open(DIR / "a-injected.pdf", "wb") as f:
-                writer.write(f)
+                injector.write(f)
+
             try:
                 await run("open", "-a", "Adobe Acrobat", DIR / "a-injected.pdf")
                 # TODO: detect callback
@@ -193,6 +204,8 @@ async def pdf2docx():
                     "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
                 )
                 raise Exit(1)
+            finally:
+                script.unlink(missing_ok=True)
         case _:
             raise NotImplementedError("More engines support incoming!")
 
