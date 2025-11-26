@@ -1,0 +1,199 @@
+from asyncio import sleep
+from dataclasses import dataclass
+from os import environ, pathsep
+from pathlib import Path
+from shutil import move
+from subprocess import CalledProcessError
+from sys import executable, platform
+
+from pypdf import PdfWriter
+from rich.console import Console
+from typer import Exit
+
+from extract import extract
+from utils import TempFile, run
+
+
+@dataclass
+class Context:
+    """Context containing global configuration for converters."""
+
+    dir: Path
+    input: Path
+    output: Path
+    engine: str
+    debug: bool
+    here: Path
+    typst_opts: list[str]
+    console: Console
+
+
+async def branch1(ctx: Context):
+    await typ2pdf(ctx)
+    await pdf2docx(ctx)
+
+
+async def branch2(ctx: Context):
+    await typ2typ(ctx)
+    await typ2docx(ctx)
+
+
+async def typ2pdf(ctx: Context):
+    ctx.console.print("[bold green]Converting[/bold green] TYP -> PDF with Typst")
+    try:
+        with TempFile(
+            ctx.input.with_name(f".typ2docx.{ctx.input.name}"),
+            (ctx.here / "preamble.typ").read_text() + ctx.input.read_text(),
+        ) as input:
+            try:
+                await run("typst", "compile", *ctx.typst_opts, input, ctx.dir / "a.pdf")
+            except CalledProcessError:
+                ctx.console.print(
+                    "[bold red]Error:[/bold red] "
+                    "Failed to compile Typst project to PDF."
+                )
+                raise Exit(1)
+    except PermissionError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Failed to compile Typst project to PDF. "
+            "Write access to the project directory is required!"
+        )
+        raise Exit(1)
+
+
+async def pdf2docx(ctx: Context):
+    match ctx.engine:
+        case "pdfservices":
+            from pdfservices import export
+
+            ctx.console.print(
+                "[bold green]Converting[/bold green] "
+                "PDF -> DOCX with Adobe PDFServices API"
+            )
+
+            try:
+                await run(export, ctx.dir / "a.pdf")
+            except ValueError:
+                ctx.console.print(
+                    "[bold red]Error:[/bold red] Make sure you have "
+                    "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
+                    "set in environment!",
+                )
+                raise Exit(1)
+            except RuntimeError as e:
+                ctx.console.print(
+                    "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX "
+                    f"with Adobe PDFServices API: {e}"
+                )
+                raise Exit(1)
+        case "acrobat":
+            ctx.console.print(
+                "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
+            )
+
+            script = (
+                Path.home()
+                / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
+                / "typ2docx.js"
+            )
+            script.parent.mkdir(exist_ok=True)
+            script.unlink(missing_ok=True)
+            # TODO: a potential race condition.
+            script.symlink_to(ctx.dir / "typ2docx.js")
+
+            injector = PdfWriter(ctx.dir / "a.pdf")
+            # TODO: preprocess template
+            injector.add_js((ctx.here / "export.js").read_text())
+            with open(ctx.dir / "a-injected.pdf", "wb") as f:
+                injector.write(f)
+
+            try:
+                await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+                # TODO: detect callback
+                await sleep(5)
+                # TODO: get real path
+                # TODO: this has a slight chance of failing if multiple conversions are
+                # running at the same time
+                # TODO: get the dir for non Pro version of Acrobat
+                # TODO: closing Acrobat afterwards
+                move(
+                    Path.home()
+                    / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
+                    / "typ2docx.docx",
+                    ctx.dir / "a.docx",
+                )
+            except CalledProcessError:
+                ctx.console.print(
+                    "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
+                )
+                raise Exit(1)
+            except FileNotFoundError:
+                ctx.console.print(
+                    "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
+                )
+                raise Exit(1)
+            finally:
+                script.unlink(missing_ok=True)
+        case _:
+            raise NotImplementedError("More engines support incoming!")
+
+
+async def typ2typ(ctx: Context):
+    """Typst to Typst (math only)"""
+
+    ctx.console.print("[bold green]Extracting[/bold green] math source code")
+
+    try:
+        root = ctx.typst_opts[ctx.typst_opts.index("--root") + 1]
+    except ValueError:
+        root = None
+    except IndexError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] "
+            "Failed to extract equations. The --root flag requires a value."
+        )
+        raise Exit(1)
+
+    try:
+        eqs: list[str] = await run(extract, str(ctx.input), root)
+    except BaseException as e:  # PanicException is derived from BaseException
+        if type(e).__name__ == "PanicException":
+            ctx.console.print(
+                "[bold red]Error:[/bold red] "
+                "Failed to extract equations, make sure the Typst project compiles."
+            )
+            raise Exit(1)
+        else:
+            raise e
+
+    ctx.console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
+    eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted
+    src = "\n\n".join(eqs)
+    (ctx.dir / "b.typ").write_text(src)
+
+
+async def typ2docx(ctx: Context):
+    """Typst to DOCX (with Pandoc, math only)"""
+    ctx.console.print("[bold green]Converting[/bold green] TYP -> DOCX with Pandoc")
+    try:
+        await run("pandoc", "b.typ", "-o", "b.docx", cwd=ctx.dir)
+    except CalledProcessError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Failed to convert Typst -> DOCX with Pandoc"
+        )
+        raise Exit(1)
+
+
+async def docx2docx(ctx: Context):
+    shell, ext = ("pwsh", "ps1") if platform == "win32" else ("sh", "sh")
+    try:
+        await run(
+            shell,
+            ctx.here / f"merge.{ext}",
+            cwd=ctx.dir,
+            env=environ
+            | {"PATH": f"{Path(executable).parent}{pathsep}{environ['PATH']}"},
+        )
+    except CalledProcessError:
+        ctx.console.print("[bold red]Error:[/bold red] Failed to merge DOCX with Saxon")
+        raise Exit(1)
