@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
-[unreleased]: https://github.com/sghng/typ2docx/compare/v0.5.0...main
+[unreleased]: https://github.com/sghng/typ2docx/compare/v0.6.0...main
+
+### Changed
+
+- Acrobat export is now achieved via Acrobat JavaScript API, which is stable
+  and cross-platform. (#29)
 
 ## [0.6.0]
 
