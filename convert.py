@@ -109,10 +109,7 @@ async def _pdf2docx_acrobat(ctx: Context):
         await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
         # TODO: handle errors
-        path = Path(listener())
-        if platform == "darwin":
-            path = Path("/", *path.parts[2:])
-        # TODO: get the dir for non Pro version of Acrobat
+        path = Path("/", *Path(listener()).parts[2:])
         # TODO: closing Acrobat afterwards
         move(path, ctx.dir / "a.docx")
     except CalledProcessError:
