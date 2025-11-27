@@ -88,13 +88,12 @@ async def _pdf2docx_acrobat(ctx: Context):
     )
 
     # FIXME: this won't work here, must be installed before Acrobat is launched
-    script = (
-        Path.home()
-        / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
-        / "typ2docx.js"
-    )
-    script.unlink(missing_ok=True)
-    script.symlink_to(HERE / "typ2docx.js")
+    # script = (
+    #     Path.home()
+    #     / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
+    #     / "typ2docx.js"
+    # )
+    # script.symlink_to(HERE / "typ2docx.js")
 
     listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
