@@ -74,8 +74,6 @@ def syncify(f):
 class Listener:
     def __init__(self, port=0):
         class Handler(BaseHTTPRequestHandler):
-            log_message = lambda *_: None
-
             def do_POST(handler):
                 self.msg = handler.rfile.read(
                     int(handler.headers.get("Content-Length", 0))
@@ -87,4 +85,5 @@ class Listener:
 
     def __call__(self):
         self.server.handle_request()
+        self.server.server_close()
         return self.msg

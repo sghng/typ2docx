@@ -9,10 +9,7 @@ function main() {
 		});
 		return;
 	}
-	console.println(
-		"TYP2DOCX: installed trusted function version: " + typ2DocxVersion
-	);
-	typ2Docx.call(this, "typ2docx.docx");
+	typ2Docx.call(this, PORT);
 }
 
 app.setTimeOut("main()", 1); // queue the function call

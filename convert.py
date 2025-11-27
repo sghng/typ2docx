@@ -1,4 +1,3 @@
-from asyncio import sleep
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
@@ -12,7 +11,7 @@ from typer import Exit
 
 from extract import extract
 from pdfservices import export
-from utils import TempFile, run
+from utils import Listener, TempFile, run
 
 HERE: Path = Path(__file__).parent
 
@@ -88,6 +87,7 @@ async def _pdf2docx_acrobat(ctx: Context):
         "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
     )
 
+    # FIXME: this won't work here, must be installed before Acrobat is launched
     script = (
         Path.home()
         / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
@@ -98,17 +98,19 @@ async def _pdf2docx_acrobat(ctx: Context):
     # TODO: a potential race condition.
     script.symlink_to(HERE / "typ2docx.js")
 
+    listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
-    # TODO: preprocess template
-    injector.add_js((HERE / "export.js").read_text())
+    injector.add_js(
+        f"const PORT = {listener.port};\n" + (HERE / "export.js").read_text()
+    )
     with open(ctx.dir / "a-injected.pdf", "wb") as f:
         injector.write(f)
 
     try:
         await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
-        # TODO: detect callback
-        await sleep(5)
-        # TODO: get real path
+        path = listener()
+        print(path)
+        raise Exit(1)
         # TODO: this has a slight chance of failing if multiple conversions are
         # running at the same time
         # TODO: get the dir for non Pro version of Acrobat
