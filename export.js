@@ -9,7 +9,13 @@ function main() {
 		});
 		return;
 	}
+	// try {
 	typ2Docx.call(this, PORT);
+	// } catch (e) {
+	// 	// TODO: send these back to CLI
+	// 	console.println("Error exporting to .docx:", e);
+	// }
+	this.closeDoc();
 }
 
 app.setTimeOut("main()", 1); // queue the function call

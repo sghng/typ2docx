@@ -74,12 +74,17 @@ def syncify(f):
 class Listener:
     def __init__(self, port=0):
         class Handler(BaseHTTPRequestHandler):
+            def log_message(*_):
+                pass
+
             def do_POST(handler):
                 self.msg = handler.rfile.read(
                     int(handler.headers.get("Content-Length", 0))
                 ).decode()
+                handler.send_response(200)
+                handler.flush_headers()
 
-        self.server = HTTPServer(("127.0.0.1", port), Handler)
+        self.server = HTTPServer(("", port), Handler)
         self.port = self.server.server_port
         self.msg: str
 
