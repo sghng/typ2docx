@@ -19,8 +19,6 @@ HERE: Path = Path(__file__).parent
 
 @dataclass
 class Context:
-    """Context containing global configuration for converters."""
-
     dir: Path
     input: Path
     output: Path
@@ -47,20 +45,19 @@ async def typ2pdf(ctx: Context):
             ctx.input.with_name(f".typ2docx.{ctx.input.name}"),
             (HERE / "preamble.typ").read_text() + ctx.input.read_text(),
         ) as input:
-            try:
-                await run("typst", "compile", *ctx.typst_opts, input, ctx.dir / "a.pdf")
-            except CalledProcessError:
-                ctx.console.print(
-                    "[bold red]Error:[/bold red] "
-                    "Failed to compile Typst project to PDF."
-                )
-                raise Exit(1)
+            await run("typst", "compile", *ctx.typst_opts, input, ctx.dir / "a.pdf")
     except PermissionError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Failed to compile Typst project to PDF. "
             "Write access to the project directory is required!"
         )
-        raise Exit(1)
+    except CalledProcessError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Failed to compile Typst project to PDF."
+        )
+    else:
+        return
+    raise Exit(1)
 
 
 async def _pdf2docx_pdfservices(ctx: Context):
@@ -75,13 +72,14 @@ async def _pdf2docx_pdfservices(ctx: Context):
             "PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET "
             "set in environment!",
         )
-        raise Exit(1)
     except RuntimeError as e:
         ctx.console.print(
             "[bold red]Error:[/bold red] Failed to convert PDF -> DOCX "
             f"with Adobe PDFServices API: {e}"
         )
-        raise Exit(1)
+    else:
+        return
+    raise Exit(1)
 
 
 async def _pdf2docx_acrobat(ctx: Context):
@@ -124,14 +122,15 @@ async def _pdf2docx_acrobat(ctx: Context):
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
         )
-        raise Exit(1)
     except FileNotFoundError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
         )
-        raise Exit(1)
+    else:
+        return
     finally:
         script.unlink(missing_ok=True)
+    raise Exit(1)
 
 
 async def pdf2docx(ctx: Context):
