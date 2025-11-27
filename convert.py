@@ -2,7 +2,7 @@ from asyncio import to_thread
 from json import loads
 from os import environ, pathsep
 from pathlib import Path
-from shutil import move
+from shutil import copy2, move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
@@ -89,14 +89,6 @@ async def _pdf2docx_acrobat(ctx: Context):
         "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
     )
 
-    # FIXME: this won't work here, must be installed before Acrobat is launched
-    # script = (
-    #     Path.home()
-    #     / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
-    #     / "typ2docx.js"
-    # )
-    # script.symlink_to(HERE / "typ2docx.js")
-
     listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
     injector.add_js(
@@ -126,6 +118,27 @@ async def _pdf2docx_acrobat(ctx: Context):
     else:
         return
     raise Exit(1)
+
+
+def acrobat_install():
+    """Installs trusted functions for Acrobat."""
+    acrobat = Path.home()
+    try:
+        match platform:
+            case "darwin":
+                acrobat /= "Library/Application Support/Adobe/Acrobat/DC"
+                assert acrobat.exists()
+            case "win32":
+                acrobat /= "AppData/Roaming/Adobe/Acrobat"
+                assert acrobat.exists()
+                acrobat /= "Privileged/DC"
+            case _:
+                raise OSError(f"Unsupported platform: {platform}")
+    except AssertionError:
+        raise FileNotFoundError(acrobat)
+    acrobat /= "JavaScripts"
+    acrobat.mkdir(exist_ok=True, parents=True)
+    copy2(HERE / "typ2docx.js", acrobat)
 
 
 async def pdf2docx(ctx: Context):
