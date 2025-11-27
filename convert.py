@@ -1,4 +1,3 @@
-from asyncio import sleep
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
@@ -12,7 +11,7 @@ from typer import Exit
 
 from extract import extract
 from pdfservices import export
-from utils import TempFile, run
+from utils import Listener, TempFile, run
 
 HERE: Path = Path(__file__).parent
 
@@ -88,37 +87,34 @@ async def _pdf2docx_acrobat(ctx: Context):
         "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
     )
 
-    script = (
-        Path.home()
-        / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
-        / "typ2docx.js"
-    )
-    script.parent.mkdir(exist_ok=True)
-    script.unlink(missing_ok=True)
-    # TODO: a potential race condition.
-    script.symlink_to(HERE / "typ2docx.js")
+    # FIXME: this won't work here, must be installed before Acrobat is launched
+    # script = (
+    #     Path.home()
+    #     / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
+    #     / "typ2docx.js"
+    # )
+    # script.symlink_to(HERE / "typ2docx.js")
 
+    listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
-    # TODO: preprocess template
-    injector.add_js((HERE / "export.js").read_text())
+    injector.add_js(
+        f"const PORT = {listener.port};\n" + (HERE / "export.js").read_text()
+    )
     with open(ctx.dir / "a-injected.pdf", "wb") as f:
         injector.write(f)
 
     try:
-        await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
-        # TODO: detect callback
-        await sleep(5)
-        # TODO: get real path
-        # TODO: this has a slight chance of failing if multiple conversions are
-        # running at the same time
+        # TODO: -g doesn't work in sub process. And first time launching Acrobat will
+        # cause an error. Perhaps we still need AppleScript on this...
+        await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+        ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
+        # TODO: handle errors
+        path = Path(listener())
+        if platform == "darwin":
+            path = Path("/", *path.parts[2:])
         # TODO: get the dir for non Pro version of Acrobat
         # TODO: closing Acrobat afterwards
-        move(
-            Path.home()
-            / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
-            / "typ2docx.docx",
-            ctx.dir / "a.docx",
-        )
+        move(path, ctx.dir / "a.docx")
     except CalledProcessError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
@@ -129,8 +125,6 @@ async def _pdf2docx_acrobat(ctx: Context):
         )
     else:
         return
-    finally:
-        script.unlink(missing_ok=True)
     raise Exit(1)
 
 

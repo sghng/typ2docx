@@ -4,7 +4,8 @@
 	"overrides": [
 		{
 			"includes": ["export.js", "typ2docx.js"],
-			"linter": { "rules": { "style": { "useTemplate": "off" } } }
+			"linter": { "rules": { "style": { "useTemplate": "off" } } },
+			"javascript": { "formatter": { "trailingCommas": "es5" } }
 		}
 	]
 }

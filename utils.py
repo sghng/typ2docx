@@ -1,9 +1,15 @@
-from asyncio import CancelledError, create_subprocess_exec, get_running_loop, to_thread
+from asyncio import (
+    CancelledError,
+    create_subprocess_exec,
+    get_running_loop,
+    to_thread,
+)
 from asyncio import run as _run
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
 from functools import partial, singledispatch, wraps
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from subprocess import CalledProcessError
 from sysconfig import get_config_var
@@ -63,3 +69,28 @@ async def _(program: str | Path, *args, **kwargs):
 
 def syncify(f):
     return wraps(f)(lambda *args, **kwargs: _run(f(*args, **kwargs)))
+
+
+class Listener:
+    def __init__(self, port=0):
+        self.msg: str
+        listener = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(*_):
+                pass
+
+            def do_POST(self):
+                listener.msg = self.rfile.read(
+                    int(self.headers.get("Content-Length", 0))
+                ).decode()
+                self.send_response(200)
+                self.flush_headers()
+
+        self._server = HTTPServer(("", port), Handler)
+        self.port = self._server.server_port
+
+    def __call__(self):
+        self._server.handle_request()
+        self._server.server_close()
+        return self.msg
