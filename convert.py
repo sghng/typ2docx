@@ -106,7 +106,7 @@ async def _pdf2docx_acrobat(ctx: Context):
         injector.write(f)
 
     try:
-        await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+        await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
         # TODO: handle errors
         path = Path(listener())
         if platform == "darwin":
