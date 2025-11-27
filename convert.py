@@ -104,7 +104,10 @@ async def _pdf2docx_acrobat(ctx: Context):
         injector.write(f)
 
     try:
+        # TODO: -g doesn't work in sub process. And first time launching Acrobat will
+        # cause an error. Perhaps we still need AppleScript on this...
         await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+        ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
         # TODO: handle errors
         path = Path(listener())
         if platform == "darwin":
