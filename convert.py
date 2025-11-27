@@ -1,3 +1,5 @@
+from asyncio import to_thread
+from json import loads
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
@@ -104,21 +106,22 @@ async def _pdf2docx_acrobat(ctx: Context):
         injector.write(f)
 
     try:
-        # TODO: -g doesn't work in sub process. And first time launching Acrobat will
-        # cause an error. Perhaps we still need AppleScript on this...
+        # TODO: First time launching Acrobat will cause an unknown error.
         await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
-        # TODO: handle errors
-        path = Path("/", *Path(listener()).parts[2:])
-        # TODO: closing Acrobat afterwards
+        msg = loads(await to_thread(listener))
+        assert msg["status"] == "ok"
+        path = Path("/", *Path(msg["path"]).parts[2:])
         move(path, ctx.dir / "a.docx")
+        # TODO: closing Acrobat afterwards
     except CalledProcessError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
         )
-    except FileNotFoundError:
+    except AssertionError:
         ctx.console.print(
-            "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
+            "[bold red]Error:[/bold red] Failed to export PDF to Word with Acrobat:",
+            f"{msg['message']}\n{msg['stack']}",
         )
     else:
         return
