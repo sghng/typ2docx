@@ -1,11 +1,11 @@
 from asyncio import sleep
-from dataclasses import dataclass
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
+from pydantic import BaseModel, ConfigDict
 from pypdf import PdfWriter
 from rich.console import Console
 from typer import Exit
@@ -17,13 +17,14 @@ from utils import TempFile, run
 HERE: Path = Path(__file__).parent
 
 
-@dataclass
-class Context:
+class Context(BaseModel):
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
     dir: Path
     input: Path
     output: Path
     engine: str
-    debug: bool
+    debug: bool = False
     typst_opts: list[str]
     console: Console
 
