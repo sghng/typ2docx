@@ -95,7 +95,6 @@ async def _pdf2docx_acrobat(ctx: Context):
     )
     script.parent.mkdir(exist_ok=True)
     script.unlink(missing_ok=True)
-    # TODO: a potential race condition.
     script.symlink_to(HERE / "typ2docx.js")
 
     listener = Listener()
@@ -108,19 +107,13 @@ async def _pdf2docx_acrobat(ctx: Context):
 
     try:
         await run("open", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
-        path = listener()
-        print(path)
-        raise Exit(1)
-        # TODO: this has a slight chance of failing if multiple conversions are
-        # running at the same time
+        # TODO: handle errors
+        path = Path(listener())
+        if platform == "darwin":
+            path = Path("/", *path.parts[2:])
         # TODO: get the dir for non Pro version of Acrobat
         # TODO: closing Acrobat afterwards
-        move(
-            Path.home()
-            / "Library/Containers/com.adobe.Acrobat.Pro/Data/tmp"
-            / "typ2docx.docx",
-            ctx.dir / "a.docx",
-        )
+        move(path, ctx.dir / "a.docx")
     except CalledProcessError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
@@ -131,8 +124,6 @@ async def _pdf2docx_acrobat(ctx: Context):
         )
     else:
         return
-    finally:
-        script.unlink(missing_ok=True)
     raise Exit(1)
 
 
