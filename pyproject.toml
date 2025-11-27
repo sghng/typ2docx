@@ -1,7 +1,14 @@
 [project]
 name = "typ2docx"
 version = "0.6.0"
-dependencies = ["pdfservices-sdk>=4.0", "pypdf", "rich", "saxonche", "typer"]
+dependencies = [
+  "pdfservices-sdk>=4",
+  "pydantic>=2",
+  "pypdf",
+  "rich",
+  "saxonche",
+  "typer",
+]
 requires-python = ">=3.11"
 authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]
 description = "A tool to convert Typst project to Microsoft Word format."
@@ -41,6 +48,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 include = [
+  "convert.py",
   "export.js",
   "main.py",
   "merge.ps1",
