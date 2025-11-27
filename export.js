@@ -1,5 +1,5 @@
 // biome-ignore lint/correctness/noUnusedVariables: invoked with setTimeOut
-function main() {
+const main = () => {
 	console.println("TYP2DOCX: self exporting to .docx");
 	if (typeof typ2Docx === "undefined") {
 		app.alert({
@@ -16,6 +16,6 @@ function main() {
 	// 	console.println("Error exporting to .docx:", e);
 	// }
 	this.closeDoc();
-}
+};
 
 app.setTimeOut("main()", 1); // queue the function call
