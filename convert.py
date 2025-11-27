@@ -93,7 +93,6 @@ async def _pdf2docx_acrobat(ctx: Context):
         / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
         / "typ2docx.js"
     )
-    script.parent.mkdir(exist_ok=True)
     script.unlink(missing_ok=True)
     script.symlink_to(HERE / "typ2docx.js")
 
