@@ -7,7 +7,7 @@
 ### Changed
 
 - Acrobat export is now achieved via Acrobat JavaScript API, which is stable
-  and cross-platform. (#29)
+  and cross-platform. (#31, #39)
 
 ## [0.6.0]
 
