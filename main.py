@@ -5,14 +5,11 @@ from shutil import move
 from sys import argv
 from typing import Annotated, Literal
 
-from rich.console import Console
-from typer import Argument, Exit, Option, Typer
+from typer import Argument, Option, Typer
 
 from convert import Context, branch1, branch2, docx2docx
+from convert import install_acrobat as _install_acrobat
 from utils import WorkingDirectory, syncify
-
-app = Typer()
-console = Console()
 
 try:
     idx = argv.index("--")
@@ -20,6 +17,22 @@ try:
     argv = argv[:idx]
 except ValueError:
     TYPST_OPTS = []
+
+if "--install-acrobat" in argv:
+    try:
+        _install_acrobat(ctx := Context())
+    except FileNotFoundError as e:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] Couldn't find Adobe Acrobat directory at"
+            f"{e.filename}, make sure it's installed!"
+        )
+    else:
+        exit(0)
+    finally:
+        exit(1)
+
+
+app = Typer()
 
 
 @app.command()
@@ -47,7 +60,15 @@ async def main(
             help="Keep intermediate files in working directory for inspection.",
         ),
     ] = False,
-    # defined here for cli help only, handled in main
+    # these args are defined here for cli help only,
+    # they are actually handled at module level
+    install_acrobat: Annotated[
+        bool,
+        Option(
+            "--install-acrobat",
+            help="Install trusted functions for Adobe Acrobat.",
+        ),
+    ] = False,
     typst_opts: Annotated[
         list[str],
         Argument(
@@ -58,39 +79,27 @@ async def main(
 ):
     """Convert a Typst project to DOCX format."""
 
-    output = output or Path.cwd() / input.with_suffix(".docx").name
-
-    console.print(f"[bold blue]Converting[/bold blue] {input}...")
-    if debug:
-        console.print(
-            "[yellow]Debug mode:[/yellow] "
-            "Intermediate files will be kept in ./.typ2docx/"
-        )
-
     with WorkingDirectory(debug) as dir:
         ctx = Context(
             dir=dir,
             input=input,
-            output=output,
+            output=output or Path.cwd() / input.with_suffix(".docx").name,
             engine=engine,
             debug=debug,
             typst_opts=TYPST_OPTS,
-            console=console,
         )
-
         try:
             async with TaskGroup() as tg:
                 tg.create_task(branch1(ctx))
                 tg.create_task(branch2(ctx))
-        except* Exit as eg:
+        except* Exception as eg:
             raise eg.exceptions[0]
 
-        console.print("[bold green]Merging[/bold green] DOCX")
+        ctx.console.print("[bold green]Merging[/bold green] DOCX")
         await docx2docx(ctx)
-        move(dir / "out.docx", output)
+        move(ctx.dir / "out.docx", ctx.output)
 
-    console.print(f"[bold green]Output saved to[/bold green] {output}")
+    ctx.console.print(f"[bold green]Output saved to[/bold green] {ctx.output}")
 
 
-if __name__ == "__main__":
-    app()
+app()

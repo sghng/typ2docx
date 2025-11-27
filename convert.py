@@ -2,7 +2,7 @@ from asyncio import to_thread
 from json import loads
 from os import environ, pathsep
 from pathlib import Path
-from shutil import copy2, move
+from shutil import copyfile, move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
@@ -19,15 +19,15 @@ HERE: Path = Path(__file__).parent
 
 
 class Context(BaseModel):
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    dir: Path
-    input: Path
-    output: Path
-    engine: str
+    dir: Path = Path.cwd() / ".typ2docx"
+    input: Path = Path.cwd() / "main.typ"
+    output: Path = Path.cwd() / "main.docx"
+    engine: str = "pdfservices"
     debug: bool = False
-    typst_opts: list[str]
-    console: Console
+    typst_opts: list[str] = []
+    console: Console = Console()
 
 
 async def branch1(ctx: Context):
@@ -120,8 +120,9 @@ async def _pdf2docx_acrobat(ctx: Context):
     raise Exit(1)
 
 
-def acrobat_install():
-    """Installs trusted functions for Acrobat."""
+def install_acrobat(ctx: Context):
+    ctx.console.print("[bold blue]Installing[/bold blue] Acrobat trusted functions...")
+
     acrobat = Path.home()
     try:
         match platform:
@@ -136,9 +137,16 @@ def acrobat_install():
                 raise OSError(f"Unsupported platform: {platform}")
     except AssertionError:
         raise FileNotFoundError(acrobat)
+
     acrobat /= "JavaScripts"
     acrobat.mkdir(exist_ok=True, parents=True)
-    copy2(HERE / "typ2docx.js", acrobat)
+    acrobat /= "typ2docx.js"
+    copyfile(HERE / "typ2docx.js", acrobat)
+
+    ctx.console.print(
+        "[bold green]Success![/bold green]"
+        f'Acrobat trusted functions installed to\n"{acrobat}"',
+    )
 
 
 async def pdf2docx(ctx: Context):
