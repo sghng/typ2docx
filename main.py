@@ -14,8 +14,6 @@ from utils import WorkingDirectory, syncify
 app = Typer()
 console = Console()
 
-HERE: Path = Path(__file__).parent
-
 try:
     idx = argv.index("--")
     TYPST_OPTS = argv[idx + 1 :]
@@ -60,7 +58,7 @@ async def main(
 ):
     """Convert a Typst project to DOCX format."""
 
-    output_path = output or Path.cwd() / input.with_suffix(".docx").name
+    output = output or Path.cwd() / input.with_suffix(".docx").name
 
     console.print(f"[bold blue]Converting[/bold blue] {input}...")
     if debug:
@@ -73,10 +71,9 @@ async def main(
         ctx = Context(
             dir=dir,
             input=input,
-            output=output_path,
+            output=output,
             engine=engine,
             debug=debug,
-            here=HERE,
             typst_opts=TYPST_OPTS,
             console=console,
         )
@@ -90,9 +87,9 @@ async def main(
 
         console.print("[bold green]Merging[/bold green] DOCX")
         await docx2docx(ctx)
-        move(dir / "out.docx", output_path)
+        move(dir / "out.docx", output)
 
-    console.print(f"[bold green]Output saved to[/bold green] {output_path}")
+    console.print(f"[bold green]Output saved to[/bold green] {output}")
 
 
 if __name__ == "__main__":

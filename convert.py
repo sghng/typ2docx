@@ -1,6 +1,5 @@
 from asyncio import sleep
 from dataclasses import dataclass
-from functools import singledispatch
 from os import environ, pathsep
 from pathlib import Path
 from shutil import move
@@ -12,7 +11,10 @@ from rich.console import Console
 from typer import Exit
 
 from extract import extract
+from pdfservices import export
 from utils import TempFile, run
+
+HERE: Path = Path(__file__).parent
 
 
 @dataclass
@@ -24,7 +26,6 @@ class Context:
     output: Path
     engine: str
     debug: bool
-    here: Path
     typst_opts: list[str]
     console: Console
 
@@ -44,7 +45,7 @@ async def typ2pdf(ctx: Context):
     try:
         with TempFile(
             ctx.input.with_name(f".typ2docx.{ctx.input.name}"),
-            (ctx.here / "preamble.typ").read_text() + ctx.input.read_text(),
+            (HERE / "preamble.typ").read_text() + ctx.input.read_text(),
         ) as input:
             try:
                 await run("typst", "compile", *ctx.typst_opts, input, ctx.dir / "a.pdf")
@@ -62,41 +63,10 @@ async def typ2pdf(ctx: Context):
         raise Exit(1)
 
 
-class Engine:
-    pass
-
-
-class PdfServices(Engine):
-    pass
-
-
-class Acrobat(Engine):
-    pass
-
-
-def get_engine(name: str) -> Engine:
-    match name:
-        case "pdfservices":
-            return PdfServices()
-        case "acrobat":
-            return Acrobat()
-        case _:
-            raise NotImplementedError("More engines support incoming!")
-
-
-@singledispatch
-async def _pdf2docx(engine: Engine, ctx: Context):
-    raise NotImplementedError(f"Unknown engine: {engine}")
-
-
-@_pdf2docx.register
-async def _(engine: PdfServices, ctx: Context):
-    from pdfservices import export
-
+async def _pdf2docx_pdfservices(ctx: Context):
     ctx.console.print(
         "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDFServices API"
     )
-
     try:
         await run(export, ctx.dir / "a.pdf")
     except ValueError:
@@ -114,8 +84,7 @@ async def _(engine: PdfServices, ctx: Context):
         raise Exit(1)
 
 
-@_pdf2docx.register
-async def _(engine: Acrobat, ctx: Context):
+async def _pdf2docx_acrobat(ctx: Context):
     ctx.console.print(
         "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
     )
@@ -128,11 +97,11 @@ async def _(engine: Acrobat, ctx: Context):
     script.parent.mkdir(exist_ok=True)
     script.unlink(missing_ok=True)
     # TODO: a potential race condition.
-    script.symlink_to(ctx.dir / "typ2docx.js")
+    script.symlink_to(HERE / "typ2docx.js")
 
     injector = PdfWriter(ctx.dir / "a.pdf")
     # TODO: preprocess template
-    injector.add_js((ctx.here / "export.js").read_text())
+    injector.add_js((HERE / "export.js").read_text())
     with open(ctx.dir / "a-injected.pdf", "wb") as f:
         injector.write(f)
 
@@ -166,7 +135,13 @@ async def _(engine: Acrobat, ctx: Context):
 
 
 async def pdf2docx(ctx: Context):
-    await _pdf2docx(get_engine(ctx.engine), ctx)
+    match ctx.engine:
+        case "pdfservices":
+            await _pdf2docx_pdfservices(ctx)
+        case "acrobat":
+            await _pdf2docx_acrobat(ctx)
+        case _:
+            raise NotImplementedError(f"Unknown engine: {ctx.engine}")
 
 
 async def typ2typ(ctx: Context):
@@ -220,7 +195,7 @@ async def docx2docx(ctx: Context):
     try:
         await run(
             shell,
-            ctx.here / f"merge.{ext}",
+            HERE / f"merge.{ext}",
             cwd=ctx.dir,
             env=environ
             | {"PATH": f"{Path(executable).parent}{pathsep}{environ['PATH']}"},
