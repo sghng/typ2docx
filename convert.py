@@ -102,6 +102,12 @@ async def _pdf2docx_acrobat(ctx: Context):
             cmd = ("open", "-g", "-a", "Adobe Acrobat")
         case "win32":
             cmd = ("start", "-WindowStyle", "Minimized", "acrobat")
+        case _:
+            ctx.console.print(
+                "[bold red]Error:[/bold red] "
+                "Acrobat export is only supported on macOS and Windows."
+            )
+            raise Exit(1)
 
     try:
         await run(*cmd, ctx.dir / "a-injected.pdf", shell=platform == "win32")
