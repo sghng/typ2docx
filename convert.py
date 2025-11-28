@@ -104,7 +104,7 @@ async def _pdf2docx_acrobat(ctx: Context):
             cmd = ("start", "-WindowStyle", "Minimized", "acrobat")
 
     try:
-        await run(*cmd, ctx.dir / "a-injected.pdf")
+        await run(*cmd, ctx.dir / "a-injected.pdf", shell=platform == "win32")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
         msg = loads(await to_thread(listener))
         assert msg["status"] == "ok"
