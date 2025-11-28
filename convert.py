@@ -97,9 +97,15 @@ async def _pdf2docx_acrobat(ctx: Context):
     with open(ctx.dir / "a-injected.pdf", "wb") as f:
         injector.write(f)
 
+    # TODO: First time launching Acrobat will cause an unknown error.
+    match platform:
+        case "darwin":
+            cmd = ("open", "-g", "-a", "Adobe Acrobat")
+        case "win32":
+            cmd = ("start", "-WindowStyle", "Minimized", "acrobat")
+
     try:
-        # TODO: First time launching Acrobat will cause an unknown error.
-        await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+        await run(*cmd, ctx.dir / "a-injected.pdf")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
         msg = loads(await to_thread(listener))
         assert msg["status"] == "ok"
@@ -184,8 +190,7 @@ async def typ2typ(ctx: Context):
                 "Failed to extract equations, make sure the Typst project compiles."
             )
             raise Exit(1)
-        else:
-            raise e
+        raise
 
     ctx.console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted

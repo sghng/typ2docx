@@ -102,4 +102,5 @@ async def main(
     ctx.console.print(f"[bold green]Output saved to[/bold green] {ctx.output}")
 
 
-app()
+if __name__ == "__main__":
+    app()
