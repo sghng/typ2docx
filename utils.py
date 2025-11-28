@@ -58,8 +58,10 @@ else:
 async def _(program: str | Path, *args, **kwargs):
     process = await create_subprocess_exec(program, *args, **kwargs)
     try:
-        if returncode := await process.wait():
+        stdout, _ = await process.communicate()
+        if returncode := process.returncode:
             raise CalledProcessError(returncode, (program, *args))
+        return stdout
     except CancelledError:
         process.kill()
         raise
