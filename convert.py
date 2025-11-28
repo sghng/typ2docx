@@ -1,4 +1,5 @@
-from asyncio import to_thread
+from asyncio import sleep, to_thread
+from asyncio.subprocess import PIPE
 from dataclasses import dataclass, field
 from json import loads
 from os import environ, pathsep
@@ -96,27 +97,38 @@ async def _pdf2docx_acrobat(ctx: Context):
     with open(ctx.dir / "a-injected.pdf", "wb") as f:
         injector.write(f)
 
-    # TODO: First time launching Acrobat will cause an unknown error.
-    match platform:
-        case "darwin":
-            cmd = ("open", "-g", "-a", "Adobe Acrobat")
-        case "win32":
-            cmd = ("start", "-WindowStyle", "Minimized", "acrobat")
-        case _:
-            ctx.console.print(
-                "[bold red]Error:[/bold red] "
-                "Acrobat export is only supported on macOS and Windows."
-            )
-            raise Exit(1)
-
+    # NOTE: First time launching Acrobat will cause an unknown error.
+    # had to open the app first, then open the file
     try:
+        match platform:
+            case "darwin":
+                launched = await run(
+                    "osascript",
+                    "-e",
+                    'tell application "System Events" to '
+                    'return (name of processes) contains "AdobeAcrobat"',
+                    stdout=PIPE,
+                )
+                cmd = ("open", "-g", "-a", "Adobe Acrobat")
+                await run(*cmd)
+                if launched.strip() == b"false":
+                    await sleep(5)
+            case "win32":
+                cmd = ("start", "acrobat", "-WindowStyle", "Minimized")
+                await run(*cmd, "-ArgumentList", "/n")
+                # await sleep(1)
+            case _:
+                ctx.console.print(
+                    "[bold red]Error:[/bold red] "
+                    "Acrobat export is only supported on macOS and Windows."
+                )
+                raise Exit(1)
         await run(*cmd, ctx.dir / "a-injected.pdf", shell=platform == "win32")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
         msg = loads(await to_thread(listener))
         assert msg["status"] == "ok"
         path = Path("/", *Path(msg["path"]).parts[2:])
         move(path, ctx.dir / "a.docx")
-        # TODO: closing Acrobat afterwards
     except CalledProcessError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
@@ -125,6 +137,12 @@ async def _pdf2docx_acrobat(ctx: Context):
         ctx.console.print(
             "[bold red]Error:[/bold red] Failed to export PDF to Word with Acrobat:",
             f"{msg['message']}\n{msg['stack']}",
+        )
+    except FileNotFoundError:
+        ctx.console.print(
+            "[bold red]Error:[/bold red] "
+            "Acrobat reported successful export but we couldn't find the file. "
+            "This is likely caused by a race condition. Please try again."
         )
     else:
         return
