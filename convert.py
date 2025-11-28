@@ -1,10 +1,12 @@
+from asyncio import to_thread
+from dataclasses import dataclass, field
+from json import loads
 from os import environ, pathsep
 from pathlib import Path
-from shutil import move
+from shutil import copyfile, move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
-from pydantic import BaseModel, ConfigDict
 from pypdf import PdfWriter
 from rich.console import Console
 from typer import Exit
@@ -16,16 +18,15 @@ from utils import Listener, TempFile, run
 HERE: Path = Path(__file__).parent
 
 
-class Context(BaseModel):
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
-
-    dir: Path
-    input: Path
-    output: Path
-    engine: str
+@dataclass
+class Context:
+    dir: Path = Path.cwd() / ".typ2docx"
+    input: Path = Path.cwd() / "main.typ"
+    output: Path = Path.cwd() / "main.docx"
+    engine: str = "pdfservices"
     debug: bool = False
-    typst_opts: list[str]
-    console: Console
+    typst_opts: list[str] = field(default_factory=list)
+    console: Console = Console()
 
 
 async def branch1(ctx: Context):
@@ -87,14 +88,6 @@ async def _pdf2docx_acrobat(ctx: Context):
         "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
     )
 
-    # FIXME: this won't work here, must be installed before Acrobat is launched
-    # script = (
-    #     Path.home()
-    #     / "Library/Application Support/Adobe/Acrobat/DC/JavaScripts"
-    #     / "typ2docx.js"
-    # )
-    # script.symlink_to(HERE / "typ2docx.js")
-
     listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
     injector.add_js(
@@ -103,29 +96,68 @@ async def _pdf2docx_acrobat(ctx: Context):
     with open(ctx.dir / "a-injected.pdf", "wb") as f:
         injector.write(f)
 
+    # TODO: First time launching Acrobat will cause an unknown error.
+    match platform:
+        case "darwin":
+            cmd = ("open", "-g", "-a", "Adobe Acrobat")
+        case "win32":
+            cmd = ("start", "-WindowStyle", "Minimized", "acrobat")
+        case _:
+            ctx.console.print(
+                "[bold red]Error:[/bold red] "
+                "Acrobat export is only supported on macOS and Windows."
+            )
+            raise Exit(1)
+
     try:
-        # TODO: -g doesn't work in sub process. And first time launching Acrobat will
-        # cause an error. Perhaps we still need AppleScript on this...
-        await run("open", "-g", "-a", "Adobe Acrobat", ctx.dir / "a-injected.pdf")
+        await run(*cmd, ctx.dir / "a-injected.pdf", shell=platform == "win32")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
-        # TODO: handle errors
-        path = Path(listener())
-        if platform == "darwin":
-            path = Path("/", *path.parts[2:])
-        # TODO: get the dir for non Pro version of Acrobat
-        # TODO: closing Acrobat afterwards
+        msg = loads(await to_thread(listener))
+        assert msg["status"] == "ok"
+        path = Path("/", *Path(msg["path"]).parts[2:])
         move(path, ctx.dir / "a.docx")
+        # TODO: closing Acrobat afterwards
     except CalledProcessError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"
         )
-    except FileNotFoundError:
+    except AssertionError:
         ctx.console.print(
-            "[bold red]Error:[/bold red] Couldn't find the Acrobat exported file!"
+            "[bold red]Error:[/bold red] Failed to export PDF to Word with Acrobat:",
+            f"{msg['message']}\n{msg['stack']}",
         )
     else:
         return
     raise Exit(1)
+
+
+def install_acrobat(ctx: Context):
+    ctx.console.print("[bold blue]Installing[/bold blue] Acrobat trusted functions...")
+
+    acrobat = Path.home()
+    try:
+        match platform:
+            case "darwin":
+                acrobat /= "Library/Application Support/Adobe/Acrobat/DC"
+                assert acrobat.exists()
+            case "win32":
+                acrobat /= "AppData/Roaming/Adobe/Acrobat"
+                assert acrobat.exists()
+                acrobat /= "Privileged/DC"
+            case _:
+                raise OSError(f"Unsupported platform: {platform}")
+    except AssertionError:
+        raise FileNotFoundError(acrobat)
+
+    acrobat /= "JavaScripts"
+    acrobat.mkdir(exist_ok=True, parents=True)
+    acrobat /= "typ2docx.js"
+    copyfile(HERE / "typ2docx.js", acrobat)
+
+    ctx.console.print(
+        "[bold green]Success! [/bold green]"
+        f'Acrobat trusted functions installed to\n"{acrobat}"',
+    )
 
 
 async def pdf2docx(ctx: Context):
@@ -163,8 +195,7 @@ async def typ2typ(ctx: Context):
                 "Failed to extract equations, make sure the Typst project compiles."
             )
             raise Exit(1)
-        else:
-            raise e
+        raise
 
     ctx.console.print(f"[bold green]Extracted[/bold green] {len(eqs)} math blocks")
     eqs = [eq for eq in eqs if eq[1:-1].strip()]  # empty equations are omitted

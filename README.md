@@ -1,10 +1,10 @@
 # `typ2docx`: Convert Math-Rich Typst Project to Microsoft Word Format
 
 `typ2docx` is a command line tool that converts a Typst project to Microsoft
-Word `.docx` format, with tables, cross-references, most of the styles, and
-most importantly the math markups preserved. It combines the mature,
-comprehensive document conversion of standard PDF-to-Word tools with Pandoc's
-high-quality mathematical formula export.
+Word `.docx` format, with tables, cross-references, most of the styles, and most
+importantly the math markups preserved. It combines the mature, comprehensive
+document conversion of standard PDF-to-Word tools with Pandoc's high-quality
+mathematical formula export.
 
 You're encouraged to read this document thoroughly before using it, as I
 employed many non-trivial hacks for this non-trivial problem! (It involves 6
@@ -24,22 +24,21 @@ publication, please consider crediting this project or sponsoring me. :heart:
 
 > [!NOTE]
 >
-> You may now try this tool without installing through [a web app](https://typ2docx.sgh.ng).
-> Note that it runs on my scarce free-tier API quota, so please install this
-> tool if you intend to use it more than once!
+> You may now try this tool without installing through
+> [a web app](https://typ2docx.sgh.ng). Note that it runs on my scarce free-tier
+> API quota, so please install this tool if you intend to use it more than once!
 
 ### Prerequisite
 
 This tool is distributed via PyPI. Installation via
 [`uv`](https://docs.astral.sh/uv/getting-started/installation/) is recommended.
 You may also use `pipx` or other similar tools to install and run this program.
-
 For more details, read
 [`uv`'s guide on using tools](https://docs.astral.sh/uv/guides/tools/).
 
 ### Tool Installation
 
-You may execute the following command:
+Execute the following command to install:
 
 ```sh
 uv tool install typ2docx
@@ -65,8 +64,7 @@ The following runtime dependencies are also required:
 
 - [Pandoc](https://pandoc.org/installing.html), a universal document converter,
   should be available in `PATH`.
-- One of the supported engines as specified in
-  [this section](#pdf-docx-engines).
+- One of the supported [`.pdf` -> `.docx` engines](#pdf-docx-engines).
 
 ## Usage
 
@@ -75,6 +73,16 @@ Typst project and specify an engine to convert it into Microsoft Word `.docx`
 format. For example:
 
 ```sh
+# obtain your free Adobe PDF Services API key first
+export PDF_SERVICES_CLIENT_ID=xxx
+export PDF_SERVICES_CLIENT_SECRET=xxx
+typ2docx main.typ -e pdfservices
+```
+
+Or, if you have Adobe Acrobat installed:
+
+```sh
+typ2docx --install-acrobat # only needed for first time using Acrobat engine
 typ2docx main.typ -e acrobat
 ```
 
@@ -85,21 +93,14 @@ Run `typ2docx --help` to see the help info on how to use this tool.
 You need to specify the engine used to convert a PDF to `.docx` file. Currently
 there are two supported engines:
 
-- **[Adobe Acrobat](https://acrobat.adobe.com)**: Pass `-e acrobat` to use this
-  engine. It uses Acrobat's JavaScript API to export a PDF to `.docx`. Either
-  the free Acrobat Reader or the paid Acrobat Pro would work. This is only
-  supported on macOS now. Due to a known issue, you may have to launch Acrobat
+- [**Adobe PDFServices API:**](https://developer.adobe.com/document-services/apis/pdf-services/)
+  It requires internet connection and valid PDFServices API credentials. This
+  service comes with 500 free conversions per month, which should be enough for
+  most people.
+- [**Adobe Acrobat:**](https://acrobat.adobe.com) It uses Acrobat's JavaScript
+  API to export a PDF to `.docx`. Either the free Acrobat Reader or the paid
+  Acrobat Pro would work. Due to a known issue, you may have to launch Acrobat
   manually before using this tool.
-- **[Adobe PDFServices API](https://developer.adobe.com/document-services/apis/pdf-services/)**:
-  Pass `-e pdfservices` to use this engine. It requires internet connection and
-  valid PDFServices API credentials. This service comes with 500 free
-  conversions per month, which should be enough for most people. You will also
-  need to set `PDF_SERVICES_CLIENT_ID` and `PDF_SERVICES_CLIENT_SECRET` for this
-  engine to work. For example:
-
-  ```sh
-  PDF_SERVICES_CLIENT_ID=xxx PDF_SERVICES_CLIENT_SECRET=xxx typ2docx main.typ -e pdfservices
-  ```
 
 ## What It Does and Does Not
 
@@ -156,8 +157,7 @@ part in the two exports together.
   - A preamble is injected to the Typst project entry point, so that all math
     are rendered as markers.
   - Typst compiles the project into PDF file.
-  - Adobe Acrobat converts this PDF into `.docx` format. This process is
-    automated with an AppleScript.
+  - This PDF file is converted to Word format by some converter.
 - Branch 2
   - A Rust lib extracts all math source code in a Typst project.
   - The source code are put into a new Typst source file, in order of their
