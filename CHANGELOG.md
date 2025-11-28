@@ -4,10 +4,14 @@
 
 [unreleased]: https://github.com/sghng/typ2docx/compare/v0.6.0...main
 
+### Added
+
+- Acrobat export is now also supported on Windows.
+
 ### Changed
 
-- Acrobat export is now achieved via Acrobat JavaScript API, which is stable
-  and cross-platform. (#31, #39)
+- Acrobat export is now achieved via Acrobat JavaScript API, which is stable and
+  cross-platform. (#31, #39, #42)
 
 ## [0.6.0]
 
