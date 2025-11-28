@@ -19,7 +19,9 @@ FROM oven/bun:slim
 WORKDIR /app
 COPY server.ts /app/server.ts
 COPY index.html /app/index.html
-RUN apt update && apt install -y --no-install-recommends unzip rsync zip
+RUN apt update && \
+    apt install -y --no-install-recommends ca-certificates unzip rsync zip && \
+    rm -rf /var/lib/apt/lists/
 COPY --from=typst /usr/local/cargo/bin/typst /usr/local/bin/typst
 COPY --from=pandoc /pandoc-*/bin/pandoc /usr/local/bin/pandoc
 COPY --from=typ2docx /root/.local/share/uv/ /root/.local/share/uv/
