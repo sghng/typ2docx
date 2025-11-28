@@ -26,10 +26,9 @@ if "--install-acrobat" in argv:
             "[bold red]Error:[/bold red] Couldn't find Adobe Acrobat directory at "
             f"{e.filename}, make sure it's installed!"
         )
+        exit(1)
     else:
         exit(0)
-    finally:
-        exit(1)
 
 
 app = Typer()
