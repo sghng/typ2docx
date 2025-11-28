@@ -69,12 +69,12 @@ async def main(
         ),
     ] = False,
     typst_opts: Annotated[
-        list[str],
+        list[str] | None,
         Argument(
             help="Options forwarded to the Typst compiler (must follow --).",
             metavar="[-- TYPST_OPT...]",
         ),
-    ] = [],
+    ] = None,
 ):
     """Convert a Typst project to DOCX format."""
 
