@@ -23,7 +23,7 @@ if "--install-acrobat" in argv:
         _install_acrobat(ctx := Context())
     except FileNotFoundError as e:
         ctx.console.print(
-            "[bold red]Error:[/bold red] Couldn't find Adobe Acrobat directory at"
+            "[bold red]Error:[/bold red] Couldn't find Adobe Acrobat directory at "
             f"{e.filename}, make sure it's installed!"
         )
     else:

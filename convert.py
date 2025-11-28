@@ -149,7 +149,7 @@ def install_acrobat(ctx: Context):
     copyfile(HERE / "typ2docx.js", acrobat)
 
     ctx.console.print(
-        "[bold green]Success![/bold green]"
+        "[bold green]Success! [/bold green]"
         f'Acrobat trusted functions installed to\n"{acrobat}"',
     )
 
