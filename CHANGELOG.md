@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
-[unreleased]: https://github.com/sghng/typ2docx/compare/v0.6.0...main
+[unreleased]: https://github.com/sghng/typ2docx/compare/v0.7.0...main
+
+## [0.7.0]
+
+[0.7.0]: https://github.com/sghng/typ2docx/compare/v0.6.0...v0.7.0
 
 ### Added
 
@@ -14,6 +18,8 @@
 
 - A small delay is added if Acrobat isn't launched, fixing the "Unknown Error"
   in export. (#44)
+- Fixed a runtime dependency problem that breaks package importing in web app.
+  (#43)
 
 ## [0.6.0]
 
