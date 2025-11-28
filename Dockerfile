@@ -1,5 +1,5 @@
 FROM rust:slim AS typ2docx
-RUN apt update && apt install -y --no-install-recommends curl
+RUN apt update && apt install -y --no-install-recommends curl pkg-config libssl-dev
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 RUN /root/.local/bin/uv tool install typ2docx --verbose
 
