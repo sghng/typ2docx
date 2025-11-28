@@ -221,7 +221,7 @@ async def typ2typ(ctx: Context):
         raise Exit(1)
 
     try:
-        eqs: list[str] = await run(extract, str(ctx.input), root)
+        eqs: list[str] = await to_thread(extract, str(ctx.input), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             ctx.console.print(
