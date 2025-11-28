@@ -1,4 +1,5 @@
 from asyncio import to_thread
+from dataclasses import dataclass, field
 from json import loads
 from os import environ, pathsep
 from pathlib import Path
@@ -6,7 +7,6 @@ from shutil import copyfile, move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
-from pydantic import BaseModel, ConfigDict
 from pypdf import PdfWriter
 from rich.console import Console
 from typer import Exit
@@ -18,15 +18,14 @@ from utils import Listener, TempFile, run
 HERE: Path = Path(__file__).parent
 
 
-class Context(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
+@dataclass
+class Context:
     dir: Path = Path.cwd() / ".typ2docx"
     input: Path = Path.cwd() / "main.typ"
     output: Path = Path.cwd() / "main.docx"
     engine: str = "pdfservices"
     debug: bool = False
-    typst_opts: list[str] = []
+    typst_opts: list[str] = field(default_factory=list)
     console: Console = Console()
 
 

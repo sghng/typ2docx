@@ -1,14 +1,7 @@
 [project]
 name = "typ2docx"
 version = "0.6.0"
-dependencies = [
-  "pdfservices-sdk>=4",
-  "pydantic>=2",
-  "pypdf",
-  "rich",
-  "saxonche",
-  "typer",
-]
+dependencies = ["pypdf", "pdfservices-sdk>=4", "rich", "saxonche", "typer"]
 requires-python = ">=3.11"
 authors = [{ name = "Samuel Huang", email = "hi@sgh.ng" }]
 description = "A tool to convert Typst project to Microsoft Word format."
@@ -36,6 +29,7 @@ classifiers = [
 dev = ["saxonche-stubs"]
 
 [project.urls]
+Homepage = "https://typ2docx.sgh.ng"
 Repository = "https://github.com/sghng/typ2docx"
 Issues = "https://github.com/sghng/typ2docx/issues"
 
