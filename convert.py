@@ -144,6 +144,7 @@ async def _pdf2docx_acrobat(ctx: Context):
         assert msg["status"] == "ok"
         path = Path("/", *Path(msg["path"]).parts[2:])
         move(path, ctx.dir / "a.docx")
+        # TODO: closing Acrobat afterwards
     except CalledProcessError:
         ctx.console.print(
             "[bold red]Error:[/bold red] Make sure Adobe Acrobat is installed!"

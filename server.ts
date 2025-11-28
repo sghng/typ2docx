@@ -14,13 +14,10 @@ Bun.serve({
 					});
 				const dir = await mkdtemp("/tmp/typ2docx-");
 				await writeFile(`${dir}/project.zip`, Buffer.from(project, "base64"));
-				await Bun.$`cd ${dir} && unzip -o project.zip && rm project.zip`
-					.quiet()
-					.nothrow();
+				await Bun.$`cd ${dir} && unzip -o project.zip && rm project.zip`.nothrow();
 				const { stderr, exitCode } =
 					await Bun.$`cd ${dir} && typ2docx ${entry} -o output.docx -e pdfservices`
 						.env(process.env)
-						.quiet()
 						.nothrow();
 
 				if (exitCode) {
