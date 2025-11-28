@@ -102,28 +102,43 @@ async def _pdf2docx_acrobat(ctx: Context):
     try:
         match platform:
             case "darwin":
-                launched = await run(
-                    "osascript",
-                    "-e",
-                    'tell application "System Events" to '
-                    'return (name of processes) contains "AdobeAcrobat"',
-                    stdout=PIPE,
-                )
+                launched = (
+                    await run(
+                        "osascript",
+                        "-e",
+                        'tell application "System Events" to '
+                        'return (name of processes) contains "AdobeAcrobat"',
+                        stdout=PIPE,
+                    )
+                ).strip() == b"false"
                 cmd = ("open", "-g", "-a", "Adobe Acrobat")
                 await run(*cmd)
-                if launched.strip() == b"false":
-                    await sleep(5)
             case "win32":
-                cmd = ("start", "acrobat", "-WindowStyle", "Minimized")
+                launched = int(
+                    await run(
+                        "powershell",
+                        "-Command",
+                        "(Get-Process -Name Acrobat | Measure-Object).Count",
+                        stdout=PIPE,
+                    )
+                )
+                cmd = (
+                    "powershell",
+                    "Start-Process",
+                    "acrobat",
+                    "-WindowStyle",
+                    "Minimized",
+                )
                 await run(*cmd, "-ArgumentList", "/n")
-                # await sleep(1)
             case _:
                 ctx.console.print(
                     "[bold red]Error:[/bold red] "
                     "Acrobat export is only supported on macOS and Windows."
                 )
                 raise Exit(1)
-        await run(*cmd, ctx.dir / "a-injected.pdf", shell=platform == "win32")
+        if launched:
+            await sleep(5)  # this value works on macOS, may not be optimal for Windows
+        await run(*cmd, ctx.dir / "a-injected.pdf")
         ctx.console.print("[dim]Waiting for Acrobat export callback...[/dim]")
         msg = loads(await to_thread(listener))
         assert msg["status"] == "ok"
@@ -234,7 +249,7 @@ async def typ2docx(ctx: Context):
 
 
 async def docx2docx(ctx: Context):
-    shell, ext = ("pwsh", "ps1") if platform == "win32" else ("sh", "sh")
+    shell, ext = ("powershell", "ps1") if platform == "win32" else ("sh", "sh")
     try:
         await run(
             shell,
