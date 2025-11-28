@@ -6,12 +6,14 @@
 
 ### Added
 
-- Acrobat export is now also supported on Windows.
-
-### Changed
-
 - Acrobat export is now achieved via Acrobat JavaScript API, which is stable and
   cross-platform. (#31, #39, #42)
+- As a result, Acrobat export is now also supported on Windows.
+
+### Fixed
+
+- A small delay is added if Acrobat isn't launched, fixing the "Unknown Error"
+  in export. (#44)
 
 ## [0.6.0]
 

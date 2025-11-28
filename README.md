@@ -99,8 +99,7 @@ there are two supported engines:
   most people.
 - [**Adobe Acrobat:**](https://acrobat.adobe.com) It uses Acrobat's JavaScript
   API to export a PDF to `.docx`. Either the free Acrobat Reader or the paid
-  Acrobat Pro would work. Due to a known issue, you may have to launch Acrobat
-  manually before using this tool.
+  Acrobat Pro would work.
 
 ## What It Does and Does Not
 
