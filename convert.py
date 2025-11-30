@@ -252,7 +252,7 @@ async def typ2docx(ctx: Context):
 
 
 async def docx2docx(ctx: Context):
-    # TODO: only temp file
+    # TODO: try avoid copying these two files, especially saxon.py
     copyfile(HERE / "saxon.py", ctx.dir / "saxon.py")
     copyfile(HERE / "merge.xslt", ctx.dir / "merge.xslt")
     shell, ext = ("powershell", "ps1") if platform == "win32" else ("sh", "sh")
