@@ -39,7 +39,7 @@ app = Typer()
 async def main(
     input: Annotated[Path, Argument(help="Entry point to the Typst project")],
     engine: Annotated[
-        Literal["acrobat", "pdfservices"],
+        Literal["acrobat", "pdfservices", "pdf2docx"],
         Option("-e", "--engine", help="The engine used to convert PDF to DOCX."),
     ],
     output: Annotated[

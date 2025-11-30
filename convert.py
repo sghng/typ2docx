@@ -8,6 +8,7 @@ from shutil import copyfile, move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
+from pdf2docx import parse
 from pypdf import PdfWriter
 from rich.console import Console
 from typer import Exit
@@ -64,7 +65,7 @@ async def typ2pdf(ctx: Context):
 
 async def _pdf2docx_pdfservices(ctx: Context):
     ctx.console.print(
-        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDFServices API"
+        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDF Services API"
     )
     try:
         await run(export, ctx.dir / "a.pdf")
@@ -194,12 +195,22 @@ def install_acrobat(ctx: Context):
     )
 
 
+async def _pdf2docx_pdf2docx(ctx: Context):
+    await run(parse, ctx.dir / "a.pdf", ctx.dir / "a.docx")
+
+
 async def pdf2docx(ctx: Context):
+    ctx.console.print(
+        f"[bold green]Converting[/bold green] PDF -> DOCX with {ctx.engine}"
+    )
+
     match ctx.engine:
         case "pdfservices":
             await _pdf2docx_pdfservices(ctx)
         case "acrobat":
             await _pdf2docx_acrobat(ctx)
+        case "pdf2docx":
+            await _pdf2docx_pdf2docx(ctx)
         case _:
             raise NotImplementedError(f"Unknown engine: {ctx.engine}")
 
@@ -250,6 +261,9 @@ async def typ2docx(ctx: Context):
 
 
 async def docx2docx(ctx: Context):
+    # TODO: only temp file
+    copyfile(HERE / "saxon.py", ctx.dir / "saxon.py")
+    copyfile(HERE / "merge.xslt", ctx.dir / "merge.xslt")
     shell, ext = ("powershell", "ps1") if platform == "win32" else ("sh", "sh")
     try:
         await run(
