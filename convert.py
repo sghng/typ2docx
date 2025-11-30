@@ -64,9 +64,6 @@ async def typ2pdf(ctx: Context):
 
 
 async def _pdf2docx_pdfservices(ctx: Context):
-    ctx.console.print(
-        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDF Services API"
-    )
     try:
         await run(export, ctx.dir / "a.pdf")
     except ValueError:
@@ -86,10 +83,6 @@ async def _pdf2docx_pdfservices(ctx: Context):
 
 
 async def _pdf2docx_acrobat(ctx: Context):
-    ctx.console.print(
-        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
-    )
-
     listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
     injector.add_js(
@@ -200,19 +193,17 @@ async def _pdf2docx_pdf2docx(ctx: Context):
 
 
 async def pdf2docx(ctx: Context):
-    ctx.console.print(
-        f"[bold green]Converting[/bold green] PDF -> DOCX with {ctx.engine}"
-    )
-
     match ctx.engine:
-        case "pdfservices":
-            await _pdf2docx_pdfservices(ctx)
         case "acrobat":
-            await _pdf2docx_acrobat(ctx)
+            engine, func = "Adobe Acrobat", _pdf2docx_acrobat
+        case "pdfservices":
+            engine, func = "Adobe PDF Services", _pdf2docx_pdfservices
         case "pdf2docx":
-            await _pdf2docx_pdf2docx(ctx)
+            engine, func = "pdf2docx", _pdf2docx_pdf2docx
         case _:
             raise NotImplementedError(f"Unknown engine: {ctx.engine}")
+    ctx.console.print(f"[bold green]Converting[/bold green] PDF -> DOCX with {engine}")
+    await func(ctx)
 
 
 async def typ2typ(ctx: Context):
