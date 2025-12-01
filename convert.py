@@ -8,6 +8,7 @@ from shutil import copyfile, move
 from subprocess import CalledProcessError
 from sys import executable, platform
 
+from pdf2docx import parse
 from pypdf import PdfWriter
 from rich.console import Console
 from typer import Exit
@@ -63,9 +64,6 @@ async def typ2pdf(ctx: Context):
 
 
 async def _pdf2docx_pdfservices(ctx: Context):
-    ctx.console.print(
-        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe PDFServices API"
-    )
     try:
         await run(export, ctx.dir / "a.pdf")
     except ValueError:
@@ -85,10 +83,6 @@ async def _pdf2docx_pdfservices(ctx: Context):
 
 
 async def _pdf2docx_acrobat(ctx: Context):
-    ctx.console.print(
-        "[bold green]Converting[/bold green] PDF -> DOCX with Adobe Acrobat"
-    )
-
     listener = Listener()
     injector = PdfWriter(ctx.dir / "a.pdf")
     injector.add_js(
@@ -194,14 +188,22 @@ def install_acrobat(ctx: Context):
     )
 
 
+async def _pdf2docx_pdf2docx(ctx: Context):
+    await run(parse, ctx.dir / "a.pdf", ctx.dir / "a.docx")
+
+
 async def pdf2docx(ctx: Context):
     match ctx.engine:
-        case "pdfservices":
-            await _pdf2docx_pdfservices(ctx)
         case "acrobat":
-            await _pdf2docx_acrobat(ctx)
+            engine, func = "Adobe Acrobat", _pdf2docx_acrobat
+        case "pdfservices":
+            engine, func = "Adobe PDF Services", _pdf2docx_pdfservices
+        case "pdf2docx":
+            engine, func = "pdf2docx", _pdf2docx_pdf2docx
         case _:
             raise NotImplementedError(f"Unknown engine: {ctx.engine}")
+    ctx.console.print(f"[bold green]Converting[/bold green] PDF -> DOCX with {engine}")
+    await func(ctx)
 
 
 async def typ2typ(ctx: Context):
@@ -221,7 +223,7 @@ async def typ2typ(ctx: Context):
         raise Exit(1)
 
     try:
-        eqs: list[str] = await run(extract, str(ctx.input), root)
+        eqs: list[str] = await to_thread(extract, str(ctx.input), root)
     except BaseException as e:  # PanicException is derived from BaseException
         if type(e).__name__ == "PanicException":
             ctx.console.print(
@@ -250,6 +252,9 @@ async def typ2docx(ctx: Context):
 
 
 async def docx2docx(ctx: Context):
+    # TODO: try avoid copying these two files, especially saxon.py
+    copyfile(HERE / "saxon.py", ctx.dir / "saxon.py")
+    copyfile(HERE / "merge.xslt", ctx.dir / "merge.xslt")
     shell, ext = ("powershell", "ps1") if platform == "win32" else ("sh", "sh")
     try:
         await run(
