@@ -10,6 +10,10 @@
 - As a result, it is now possible to use this tool without installing any
   additional software or obtaining API keys.
 
+### Fixed
+
+- Pinned `typer>=0.19` and `click>=8.3`. (#45)
+
 ## [0.7.0]
 
 [0.7.0]: https://github.com/sghng/typ2docx/compare/v0.6.0...v0.7.0
