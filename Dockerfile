@@ -1,6 +1,8 @@
 FROM rust:slim AS typ2docx
-RUN apt update && apt install -y --no-install-recommends curl pkg-config libssl-dev
+RUN apt update && apt install -y --no-install-recommends \
+    curl pkg-config libssl-dev
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+COPY pyproject.toml /
 RUN /root/.local/bin/uv tool install typ2docx --verbose
 
 # align with oven/bun:slim
@@ -9,21 +11,20 @@ RUN apt update && apt install -y --no-install-recommends pkg-config libssl-dev
 RUN cargo install typst-cli
 
 FROM alpine/curl AS pandoc
-ARG VERSION=3.8.2.1
 ARG PLATFORM=linux-amd64
 ARG REPO=https://github.com/jgm/pandoc
+ARG VERSION=3.8.2.1
 ARG FILE=pandoc-${VERSION}-${PLATFORM}.tar.gz
-RUN curl -L "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
+RUN curl -LsSF "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
 
 FROM oven/bun:slim
-WORKDIR /app
-COPY server.ts /app/server.ts
-COPY index.html /app/index.html
 RUN apt update && \
     apt install -y --no-install-recommends ca-certificates unzip rsync zip && \
     rm -rf /var/lib/apt/lists/
-COPY --from=typst /usr/local/cargo/bin/typst /usr/local/bin/typst
-COPY --from=pandoc /pandoc-*/bin/pandoc /usr/local/bin/pandoc
+COPY --from=pandoc /pandoc-*/bin/pandoc /usr/local/bin/
+COPY --from=typst /usr/local/cargo/bin/typst /usr/local/bin/
+COPY --from=typ2docx /root/.local/bin/typ2docx /usr/local/bin/
 COPY --from=typ2docx /root/.local/share/uv/ /root/.local/share/uv/
-COPY --from=typ2docx /root/.local/bin/typ2docx /usr/local/bin/typ2docx
+COPY server.ts /
+COPY index.html /
 CMD ["bun", "server.ts"]
