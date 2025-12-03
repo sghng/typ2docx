@@ -64,13 +64,19 @@ The following runtime dependencies are also required:
 
 - [Pandoc](https://pandoc.org/installing.html), a universal document converter,
   should be available in `PATH`.
-- One of the supported [`.pdf` -> `.docx` engines](#pdf-docx-engines).
+- One of the supported [`.pdf` to `.docx` engines](#pdf-to-docx-engines).
 
 ## Usage
 
 Once the tool is installed, invoke it with the path to the entry point of your
 Typst project and specify an engine to convert it into Microsoft Word `.docx`
 format. For example:
+
+```sh
+typ2docx main.typ -e pdf2docx
+```
+
+Or, if you want better export quality and are ok with some additional steps:
 
 ```sh
 # obtain your free Adobe PDF Services API key first
@@ -88,16 +94,20 @@ typ2docx main.typ -e acrobat
 
 Run `typ2docx --help` to see the help info on how to use this tool.
 
-### PDF -> DOCX Engines
+### PDF to DOCX Engines
 
 You need to specify the engine used to convert a PDF to `.docx` file. Currently
-there are two supported engines:
+these are the available options:
 
-- [**Adobe PDFServices API:**](https://developer.adobe.com/document-services/apis/pdf-services/)
+- **[`pdf2docx`](https://pdf2docx.readthedocs.io):** A Python package based on
+  [PyMuPDF](https://pymupdf.io). This engine is bundled with `typ2docx` and can
+  be used out of the box. The export quality of this engine is not as good as
+  the others.
+- **[Adobe PDFServices API](https://developer.adobe.com/document-services/apis/pdf-services/):**
   It requires internet connection and valid PDFServices API credentials. This
   service comes with 500 free conversions per month, which should be enough for
   most people.
-- [**Adobe Acrobat:**](https://acrobat.adobe.com) It uses Acrobat's JavaScript
+- **[Adobe Acrobat](https://acrobat.adobe.com):** It uses Acrobat's JavaScript
   API to export a PDF to `.docx`. Either the free Acrobat Reader or the paid
   Acrobat Pro would work.
 

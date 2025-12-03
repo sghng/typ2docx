@@ -1,3 +1,4 @@
+import atexit
 from asyncio import (
     CancelledError,
     create_subprocess_exec,
@@ -45,13 +46,14 @@ async def run(func_or_program, *args, **kwargs):
 if get_config_var("Py_GIL_DISABLED"):
     run.register(to_thread)
 else:
+    _EXECUTOR = ProcessPoolExecutor()
+    atexit.register(_EXECUTOR.shutdown)
 
     @run.register
     async def _(func: Callable, *args, **kwargs):
-        with ProcessPoolExecutor() as executor:
-            return await get_running_loop().run_in_executor(
-                executor, partial(func, *args, **kwargs)
-            )
+        return await get_running_loop().run_in_executor(
+            _EXECUTOR, partial(func, *args, **kwargs)
+        )
 
 
 @run.register
