@@ -2,6 +2,7 @@
 name = "typ2docx"
 version = "0.7.0"
 dependencies = [
+  "click>=8.3",
   "pdfservices-sdk>=4",
   "pypdf",
   "rich",
