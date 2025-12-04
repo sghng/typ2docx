@@ -8,12 +8,13 @@ RUN /root/.local/bin/uv tool install typ2docx --verbose
 # align with oven/bun:slim
 FROM rust:slim-bookworm AS typst
 RUN apt update && apt install -y --no-install-recommends pkg-config libssl-dev
+COPY Cargo.toml /
 RUN cargo install typst-cli
 
 FROM alpine/curl AS pandoc
 ARG PLATFORM=linux-amd64
 ARG REPO=https://github.com/jgm/pandoc
-ARG VERSION=3.8.2.1
+ARG VERSION=3.8.3
 ARG FILE=pandoc-${VERSION}-${PLATFORM}.tar.gz
 RUN curl -LsSF "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
 
