@@ -16,3 +16,4 @@ node_modules/
 .typ2docx/
 *.docx
 *.pdf
+tests/
