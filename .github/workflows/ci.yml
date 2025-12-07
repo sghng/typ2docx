@@ -1,0 +1,39 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install fish shell
+        uses: fish-actions/install-fish@v1
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v4
+
+      - name: Build with uv
+        run: uv tool install .
+
+      - name: Initialize tests
+        run: just init-tests
+
+      - name: Run tests
+        run: just run-test
