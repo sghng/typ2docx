@@ -9,6 +9,7 @@
 - Bundled new PDF to Word converter `pdf2docx`. (#47)
 - As a result, it is now possible to use this tool without installing any
   additional software or obtaining API keys.
+- CI/CD workflow via GitHub Actions. (#49)
 
 ## [0.7.0]
 
