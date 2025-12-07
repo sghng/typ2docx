@@ -51,4 +51,4 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - name: Trigger rebuild
-        run: curl {{ secrets.DEPLOY_HOOK }}
+        run: curl ${{ secrets.DEPLOY_HOOK }}
