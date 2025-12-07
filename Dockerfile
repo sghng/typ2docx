@@ -16,7 +16,7 @@ ARG PLATFORM=linux-amd64
 ARG REPO=https://github.com/jgm/pandoc
 ARG VERSION=3.8.3
 ARG FILE=pandoc-${VERSION}-${PLATFORM}.tar.gz
-RUN curl -LsSF "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
+RUN curl -L "${REPO}/releases/download/${VERSION}/${FILE}" | tar -xz
 
 FROM oven/bun:slim
 RUN apt update && \
