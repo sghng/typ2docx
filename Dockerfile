@@ -1,10 +1,10 @@
 FROM rust:alpine AS typ2docx
-RUN apk add pkgconfig openssl-dev gcompat
+RUN apk add --no-cache pkgconfig openssl-dev gcompat
 COPY pyproject.toml /
 RUN uv tool install typ2docx --python-platform x86_64-manylinux_2_40 --verbose
 
 FROM alpine:edge AS typst
-RUN apk add typst
+RUN apk add --no-cache typst
 
 FROM pandoc/minimal AS pandoc
 
