@@ -105,21 +105,16 @@
   </xsl:template>
 
   <!--
-    A util function to extract marker number from marker text, works for both
-    BLOCK and INLINE. Tries block pattern first, then inline pattern.
+    A util function to extract index from marker, works for both BLOCK and
+    INLINE markers.
   -->
-  <xsl:function name="local:extract-marker-number" as="xs:integer">
+  <xsl:function name="local:extract-marker-index" as="xs:integer">
     <xsl:param name="marker" as="xs:string"/>
-    <xsl:choose>
-      <!-- Try block marker pattern first (with anchors) -->
-      <xsl:when test="matches($marker, $marker-block)">
-        <xsl:sequence select="xs:integer(replace($marker, $marker-block, '$1'))"/>
-      </xsl:when>
-      <!-- Otherwise try inline marker pattern (without anchors, but marker is isolated) -->
-      <xsl:when test="matches($marker, $marker-inline)">
-        <xsl:sequence select="xs:integer(replace($marker, $marker-inline, '$1'))"/>
-      </xsl:when>
-    </xsl:choose>
+    <xsl:variable
+      name="pattern"
+      select="replace($marker-block, 'BLOCK', '(?:BLOCK|INLINE)')"
+    />
+    <xsl:sequence select="xs:integer(replace($marker, $pattern, '$1'))"/>
   </xsl:function>
 
   <!--
@@ -129,7 +124,7 @@
   <xsl:template match="w:p[local:is-block(.)]">
     <xsl:variable
       name="marker-num"
-      select="local:extract-marker-number(string(.//w:t))"
+      select="local:extract-marker-index(string(.//w:t))"
     />
     <xsl:copy-of select="$math-block[$marker-num + 1]"/>
   </xsl:template>
@@ -144,7 +139,7 @@
       <xsl:choose>
         <xsl:when test="matches(normalize-space($t), $marker-inline)">
           <!-- This w:t contains only a marker (normalized), output math -->
-          <xsl:variable name="marker-num" select="local:extract-marker-number(normalize-space($t))"/>
+          <xsl:variable name="marker-num" select="local:extract-marker-index(normalize-space($t))"/>
           <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
         </xsl:when>
         <xsl:when test="matches($t, $marker-inline)">
@@ -155,7 +150,7 @@
             <xsl:choose>
               <xsl:when test="matches($token, $marker-inline)">
                 <!-- This is a marker, extract its number and output math -->
-                <xsl:variable name="marker-num" select="local:extract-marker-number($token)"/>
+                <xsl:variable name="marker-num" select="local:extract-marker-index($token)"/>
                 <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
               </xsl:when>
               <xsl:otherwise>
