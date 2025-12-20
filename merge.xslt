@@ -131,51 +131,48 @@
     <xsl:copy-of select="$math-block[$index + 1]"/>
   </xsl:template>
 
-  <!-- HACK: This is vibecoded, I have no idea how it worked. -->
+  <!--
+    HACK: vibe coded, needs to be refactored.
 
-  <!-- Handle w:r elements that contain inline markers -->
+    Handle w:r elements that contain inline markers.
+    
+    For each w:t: if it contains markers, split into segments and process each
+    (markers → math elements, text → wrapped in w:r). Otherwise, copy as-is.
+  -->
   <xsl:template match="w:r[w:t[matches(., $marker-inline)]]">
     <xsl:variable name="rPr" select="w:rPr"/>
     <xsl:for-each select="w:t">
       <xsl:variable name="t" select="."/>
       <xsl:choose>
-        <xsl:when test="matches(normalize-space($t), $marker-inline)">
-          <!-- This w:t contains only a marker (normalized), output math -->
-          <xsl:variable name="marker-num" select="local:extract-marker-index(normalize-space($t))"/>
-          <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
-        </xsl:when>
         <xsl:when test="matches($t, $marker-inline)">
-          <!-- This w:t contains markers mixed with other text, split it -->
-          <xsl:variable name="segments" select="local:split-on-marker(string($t))"/>
-          <xsl:for-each select="$segments">
-            <xsl:variable name="segment" select="."/>
+          <!-- Contains markers: split and process each segment -->
+          <xsl:for-each select="local:split-on-marker(string($t))">
+            <xsl:variable name="seg" select="."/>
             <xsl:choose>
-              <xsl:when test="matches($segment, $marker-inline)">
-                <!-- This is a marker, extract its number and output math -->
-                <xsl:variable name="marker-num" select="local:extract-marker-index($segment)"/>
-                <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
+              <!-- Marker segments: must exactly match the marker pattern -->
+              <xsl:when test="matches($seg, '^@@MATH:INLINE:\d+@@$')">
+                <!-- Marker: replace with math element -->
+                <xsl:copy-of select="$math-inline[local:extract-marker-index($seg) + 1]"/>
               </xsl:when>
-              <xsl:otherwise>
-                <!-- Regular text, create new w:r if segment is not empty -->
-                <xsl:if test="normalize-space($segment) ne ''">
-                  <xsl:element name="w:r">
-                    <xsl:copy-of select="$rPr"/>
-                    <xsl:element name="w:t">
-                      <xsl:copy-of select="$t/@*"/>
-                      <xsl:value-of select="$segment"/>
-                    </xsl:element>
-                  </xsl:element>
-                </xsl:if>
-              </xsl:otherwise>
+              <xsl:when test="normalize-space(.) ne ''">
+                <!-- Non-empty text: wrap in w:r with preserved properties -->
+                <w:r>
+                  <xsl:copy-of select="$rPr"/>
+                  <w:t>
+                    <xsl:copy-of select="$t/@*"/>
+                    <xsl:value-of select="."/>
+                  </w:t>
+                </w:r>
+              </xsl:when>
             </xsl:choose>
           </xsl:for-each>
         </xsl:when>
         <xsl:otherwise>
-          <!-- This w:t doesn't contain markers, just copy it in a new w:r -->
-          <xsl:element name="w:r">
+          <!-- No markers: copy w:t as-is in a new w:r -->
+          <w:r>
             <xsl:copy-of select="$rPr"/>
             <xsl:copy-of select="$t"/>
-          </xsl:element>
+          </w:r>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>
