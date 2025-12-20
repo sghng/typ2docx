@@ -108,7 +108,7 @@
       name="index"
       select="local:extract-marker-index(string(.//w:t))"
     />
-    <xsl:copy-of select="$math-block[$index + 1]"/>
+    <xsl:copy-of select="$math-block[$index]"/>
   </xsl:template>
 
   <!--
@@ -124,7 +124,7 @@
       <!-- Marker segment: replace with math element -->
       <xsl:matching-substring>
         <xsl:variable name="marker" select="."/>
-        <xsl:copy-of select="$math-inline[local:extract-marker-index($marker) + 1]"/>
+        <xsl:copy-of select="$math-inline[local:extract-marker-index($marker)]"/>
       </xsl:matching-substring>
       <!-- Non-marker segment: create a new run with rPr -->
       <xsl:non-matching-substring>
