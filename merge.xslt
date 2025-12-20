@@ -21,7 +21,7 @@
     select="document('b.d/word/document.xml')"
   ></xsl:variable>
 
-  <!-- GET MATH ELEMENTS FROM B -->
+  <!-- OBTAIN MATH ELEMENTS FROM B -->
 
   <!-- Block math paragraphs contain m:oMathPara -->
   <xsl:variable
@@ -63,6 +63,7 @@
       select="count($p//w:t) = 1 and matches($p//w:t, $marker-block)"
     />
   </xsl:function>
+
   <!--
     Inline math marker could be in the same <w:t> with other text when there's
     no space around. We capture the <w:t> for future processing.
@@ -72,17 +73,18 @@
     <xsl:sequence select="matches($t, $marker-inline)"/>
   </xsl:function>
 
-  <!-- HACK: this is vibe-coded, need to understand this -->
-
-  <!-- Tokenize text by splitting on inline markers, returning marker positions -->
-  <xsl:function name="local:tokenize-inline-text" as="xs:string*">
+  <!--
+    Split text on markers, returning a sequence of strings alternating between
+    marker strings and regular text segments.
+  -->
+  <xsl:function name="local:split-on-marker" as="xs:string*">
     <xsl:param name="text" as="xs:string"/>
-    <xsl:analyze-string select="$text" regex="({$marker-inline})">
+    <xsl:analyze-string select="$text" regex="{$marker-inline}">
       <xsl:matching-substring>
-        <xsl:value-of select="."/>
+        <xsl:sequence select="."/>
       </xsl:matching-substring>
       <xsl:non-matching-substring>
-        <xsl:value-of select="."/>
+        <xsl:sequence select="."/>
       </xsl:non-matching-substring>
     </xsl:analyze-string>
   </xsl:function>
@@ -123,10 +125,10 @@
   -->
   <xsl:template match="w:p[local:is-block(.)]">
     <xsl:variable
-      name="marker-num"
+      name="index"
       select="local:extract-marker-index(string(.//w:t))"
     />
-    <xsl:copy-of select="$math-block[$marker-num + 1]"/>
+    <xsl:copy-of select="$math-block[$index + 1]"/>
   </xsl:template>
 
   <!-- HACK: This is vibecoded, I have no idea how it worked. -->
@@ -143,24 +145,24 @@
           <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
         </xsl:when>
         <xsl:when test="matches($t, $marker-inline)">
-          <!-- This w:t contains markers mixed with other text, tokenize it -->
-          <xsl:variable name="tokens" select="local:tokenize-inline-text(string($t))"/>
-          <xsl:for-each select="$tokens">
-            <xsl:variable name="token" select="."/>
+          <!-- This w:t contains markers mixed with other text, split it -->
+          <xsl:variable name="segments" select="local:split-on-marker(string($t))"/>
+          <xsl:for-each select="$segments">
+            <xsl:variable name="segment" select="."/>
             <xsl:choose>
-              <xsl:when test="matches($token, $marker-inline)">
+              <xsl:when test="matches($segment, $marker-inline)">
                 <!-- This is a marker, extract its number and output math -->
-                <xsl:variable name="marker-num" select="local:extract-marker-index($token)"/>
+                <xsl:variable name="marker-num" select="local:extract-marker-index($segment)"/>
                 <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
               </xsl:when>
               <xsl:otherwise>
-                <!-- Regular text, create new w:r if token is not empty -->
-                <xsl:if test="normalize-space($token) ne ''">
+                <!-- Regular text, create new w:r if segment is not empty -->
+                <xsl:if test="normalize-space($segment) ne ''">
                   <xsl:element name="w:r">
                     <xsl:copy-of select="$rPr"/>
                     <xsl:element name="w:t">
                       <xsl:copy-of select="$t/@*"/>
-                      <xsl:value-of select="$token"/>
+                      <xsl:value-of select="$segment"/>
                     </xsl:element>
                   </xsl:element>
                 </xsl:if>
