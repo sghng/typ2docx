@@ -1,3 +1,8 @@
+<!--
+  Do leave a lot of comments in this file, otherwise it becomes completely
+  unreadable and unmaintainable!
+-->
+
 <xsl:stylesheet
   version="3.0"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -7,13 +12,34 @@
   xmlns:local="local"
 >
   <!-- Document paths are relative to the stylesheet location (base_dir) -->
-  <xsl:variable name="doc-a" select="document('a.d/word/document.xml')"></xsl:variable>
-  <xsl:variable name="doc-b" select="document('b.d/word/document.xml')"></xsl:variable>
+  <xsl:variable
+    name="doc-a"
+    select="document('a.d/word/document.xml')"
+  ></xsl:variable>
+  <xsl:variable
+    name="doc-b"
+    select="document('b.d/word/document.xml')"
+  ></xsl:variable>
+
+  <!-- GET MATH ELEMENTS FROM B -->
 
   <!-- Block math paragraphs contain m:oMathPara -->
-  <xsl:variable name="math-block" as="element(w:p)*" select="$doc-b//w:p[m:oMathPara]"/>
-  <!-- Inline math is a <m:oMath> child of <w:p> (there can be several), but not in m:oMathPara -->
-  <xsl:variable name="math-inline" as="element(m:oMath)*" select="$doc-b//w:p/m:oMath[not(parent::m:oMathPara)]"/>
+  <xsl:variable
+    name="math-block"
+    as="element(w:p)*"
+    select="$doc-b//w:p[m:oMathPara]"
+  />
+  <!--
+    Inline math is a <m:oMath> child of <w:p> (there can be several), that is
+    not in m:oMathPara.
+  -->
+  <xsl:variable
+    name="math-inline"
+    as="element(m:oMath)*"
+    select="$doc-b//w:p/m:oMath[not(parent::m:oMathPara)]"
+  />
+
+  <!-- FIND MARKERS IN A -->
 
   <!--
     Inline math can look exactly like a block marker in its own paragraph.
@@ -28,16 +54,20 @@
   -->
   <xsl:function name="local:is-block" as="xs:boolean">
     <xsl:param name="p" as="element(w:p)"/>
-    <xsl:sequence select="count($p//w:t) = 1 and matches($p//w:t, $marker-block)"/>
+    <xsl:sequence
+      select="count($p//w:t) = 1 and matches($p//w:t, $marker-block)"
+    />
   </xsl:function>
   <!--
-    Inline math marker could be in the same <w:t> with other text when there's no space around.
-    We capture the <w:t> for future processing.
+    Inline math marker could be in the same <w:t> with other text when there's
+    no space around. We capture the <w:t> for future processing.
   -->
   <xsl:function name="local:is-inline" as="xs:boolean">
     <xsl:param name="t" as="element(w:t)"/>
     <xsl:sequence select="matches($t, $marker-inline)"/>
   </xsl:function>
+
+  <!-- HACK: this is vibe-coded, need to understand this -->
 
   <!-- Tokenize text by splitting on inline markers, returning marker positions -->
   <xsl:function name="local:tokenize-inline-text" as="xs:string*">
@@ -53,29 +83,47 @@
     </xsl:analyze-string>
   </xsl:function>
 
-  <!-- Direct processor to process doc-a, the entry point -->
+  <!-- PROCESSING -->
+
+  <!-- Direct processor to process A, the entry point -->
   <xsl:template name="main" match="/">
     <xsl:apply-templates select="$doc-a/w:document"/>
   </xsl:template>
 
-  <!-- Identity template that copies everything by default. Lowest specificity -->
+  <!--
+    Identity template that copies everything from A by default. Lowest
+    specificity.
+  -->
   <xsl:template match="@*|node()">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
 
-  <!-- If it's block marker paragraph, we replace it with the actual math paragraph. -->
+  <!--
+    A util function to extract marker number from marker text, works for both
+    BLOCK and INLINE.
+  -->
+  <xsl:function name="local:extract-marker-number" as="xs:integer">
+    <xsl:param name="marker" as="xs:string"/>
+    <xsl:sequence select="
+      xs:integer(replace($marker, '^@@MATH:(?:BLOCK|INLINE):(\d+)@@$', '$1'))
+    "/>
+  </xsl:function>
+
+  <!--
+    If it's a block marker paragraph in A, we replace it with the actual math
+    paragraph from B.
+  -->
   <xsl:template match="w:p[local:is-block(.)]">
-    <xsl:variable name="marker-num" select="local:extract-marker-number(string(.//w:t))"/>
+    <xsl:variable
+      name="marker-num"
+      select="local:extract-marker-number(string(.//w:t))"
+    />
     <xsl:copy-of select="$math-block[$marker-num + 1]"/>
   </xsl:template>
 
-  <!-- Extract marker number from marker text (works for both BLOCK and INLINE) -->
-  <xsl:function name="local:extract-marker-number" as="xs:integer">
-    <xsl:param name="marker" as="xs:string"/>
-    <xsl:sequence select="xs:integer(replace($marker, '^@@MATH:(?:BLOCK|INLINE):(\d+)@@$', '$1'))"/>
-  </xsl:function>
+  <!-- HACK: This is vibecoded, I have no idea how it worked. -->
 
   <!-- Handle w:r elements that contain inline markers -->
   <xsl:template match="w:r[w:t[matches(., '@@MATH:INLINE:\d+@@')]]">
