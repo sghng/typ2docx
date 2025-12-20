@@ -73,22 +73,6 @@
     <xsl:sequence select="matches($t, $marker-inline)"/>
   </xsl:function>
 
-  <!--
-    Split text on markers, returning a sequence of strings alternating between
-    marker strings and regular text segments.
-  -->
-  <xsl:function name="local:split-on-marker" as="xs:string*">
-    <xsl:param name="text" as="xs:string"/>
-    <xsl:analyze-string select="$text" regex="{$marker-inline}">
-      <xsl:matching-substring>
-        <xsl:sequence select="."/>
-      </xsl:matching-substring>
-      <xsl:non-matching-substring>
-        <xsl:sequence select="."/>
-      </xsl:non-matching-substring>
-    </xsl:analyze-string>
-  </xsl:function>
-
   <!-- PROCESSING -->
 
   <!-- Direct processor to process A, the entry point -->
@@ -132,46 +116,44 @@
   </xsl:template>
 
   <!--
+    Helper function to split w:t on markers and return a sequence of elements:
+
+    - Marker segments replaced with the corresponding m:oMath
+    - Non-marker segments wrapped in w:r elements, with rPr included
+  -->
+  <xsl:function name="local:process-t" as="element()*">
+    <xsl:param name="t" as="element(w:t)"/>
+    <xsl:param name="rPr" as="element(w:rPr)?"/> <!-- Keep track of run properties -->
+    <xsl:analyze-string select="string($t)" regex="{$marker-inline}">
+      <!-- Marker segment: replace with math element -->
+      <xsl:matching-substring>
+        <xsl:variable name="marker" select="."/>
+        <xsl:copy-of select="$math-inline[local:extract-marker-index($marker) + 1]"/>
+      </xsl:matching-substring>
+      <!-- Non-marker segment: create a new run with rPr -->
+      <xsl:non-matching-substring>
+        <w:r>
+          <xsl:copy-of select="$rPr"/>
+          <w:t><xsl:value-of select="."/></w:t>
+        </w:r>
+      </xsl:non-matching-substring>
+    </xsl:analyze-string>
+  </xsl:function>
+
+  <!--
     Handle w:r elements that contain inline markers.
 
-    For each w:t: if it contains markers, split into segments and process each
-    (markers → math elements, text → wrapped in w:r). Otherwise, copy as-is.
+    This'll create more runs than needed, which doesn't interfere with the
+    functionality of Word, but helps keep the code simple.
   -->
   <xsl:template match="w:r[w:t[matches(., $marker-inline)]]">
     <xsl:variable name="rPr" select="w:rPr"/> <!-- Keep track of run properties -->
     <xsl:for-each select="*"> <!-- Iterate the run -->
       <xsl:choose>
         <xsl:when test="self::w:rPr"></xsl:when> <!-- Skip w:rPr -->
-        <xsl:when test="self::w:t"> <!-- Process w:t -->
-          <xsl:variable name="t" select="."/>
-          <xsl:choose>
-            <!-- Has markers: split and process each segment -->
-            <xsl:when test="matches($t, $marker-inline)">
-              <!-- Iterate over each segment -->
-              <xsl:for-each select="local:split-on-marker(string($t))">
-                <xsl:variable name="seg" select="."/>
-                <xsl:choose>
-                  <!-- Marker segments: must exactly match the marker pattern, replace with math -->
-                  <!-- TODO: really? there must be something wrong -->
-                  <xsl:when test="matches($seg, '^@@MATH:INLINE:\d+@@$')">
-                    <xsl:copy-of select="$math-inline[local:extract-marker-index($seg) + 1]"/>
-                  </xsl:when>
-                  <!-- Not a marker segment: copy into a new run --> <xsl:otherwise> <w:r>
-                      <xsl:copy-of select="$rPr"/>
-                      <w:t><xsl:value-of select="."/></w:t>
-                    </w:r>
-                  </xsl:otherwise>
-                </xsl:choose>
-              </xsl:for-each>
-            </xsl:when>
-            <!-- No markers: copy w:t as-is in a new w:r -->
-            <xsl:otherwise>
-              <w:r>
-                <xsl:copy-of select="$rPr"/>
-                <xsl:copy-of select="$t"/>
-              </w:r>
-            </xsl:otherwise>
-          </xsl:choose>
+        <!-- Process w:t, works the same w/ or w/out markers -->
+        <xsl:when test="self::w:t">
+          <xsl:copy-of select="local:process-t(., $rPr)"/>
         </xsl:when>
         <!-- Other elements: copy as-is in a new w:r -->
         <xsl:otherwise>
