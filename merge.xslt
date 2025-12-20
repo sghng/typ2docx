@@ -42,11 +42,16 @@
   <!-- FIND MARKERS IN A -->
 
   <!--
-    Inline math can look exactly like a block marker in its own paragraph.
-    Hence we need two distinct markers.
+    Inline marker, when in its own paragraph, can look exactly like a block
+    marker, i.e. can't be distinguished by examining the ancestors. Hence we
+    need two distinct markers.
+
+    - Block marker always has anchors (for whole-paragraph matching).
+    - Inline marker never has anchors (multiple can appear together in <w:t>).
+    - Capture groups are included for index extraction.
   -->
-  <xsl:variable name="marker-block" select="'^@@MATH:BLOCK:\d+@@$'"/>
-  <xsl:variable name="marker-inline" select="'^@@MATH:INLINE:\d+@@$'"/>
+  <xsl:variable name="marker-block" select="'^@@MATH:BLOCK:(\d+)@@$'"/>
+  <xsl:variable name="marker-inline" select="'@@MATH:INLINE:(\d+)@@'"/>
 
   <!--
     Block math marker is the only <w:t> child of the only <w:r> child of <w:p>.
@@ -72,8 +77,7 @@
   <!-- Tokenize text by splitting on inline markers, returning marker positions -->
   <xsl:function name="local:tokenize-inline-text" as="xs:string*">
     <xsl:param name="text" as="xs:string"/>
-    <xsl:variable name="pattern" select="'@@MATH:INLINE:\d+@@'"/>
-    <xsl:analyze-string select="$text" regex="({$pattern})">
+    <xsl:analyze-string select="$text" regex="({$marker-inline})">
       <xsl:matching-substring>
         <xsl:value-of select="."/>
       </xsl:matching-substring>
@@ -102,13 +106,20 @@
 
   <!--
     A util function to extract marker number from marker text, works for both
-    BLOCK and INLINE.
+    BLOCK and INLINE. Tries block pattern first, then inline pattern.
   -->
   <xsl:function name="local:extract-marker-number" as="xs:integer">
     <xsl:param name="marker" as="xs:string"/>
-    <xsl:sequence select="
-      xs:integer(replace($marker, '^@@MATH:(?:BLOCK|INLINE):(\d+)@@$', '$1'))
-    "/>
+    <xsl:choose>
+      <!-- Try block marker pattern first (with anchors) -->
+      <xsl:when test="matches($marker, $marker-block)">
+        <xsl:sequence select="xs:integer(replace($marker, $marker-block, '$1'))"/>
+      </xsl:when>
+      <!-- Otherwise try inline marker pattern (without anchors, but marker is isolated) -->
+      <xsl:when test="matches($marker, $marker-inline)">
+        <xsl:sequence select="xs:integer(replace($marker, $marker-inline, '$1'))"/>
+      </xsl:when>
+    </xsl:choose>
   </xsl:function>
 
   <!--
@@ -126,7 +137,7 @@
   <!-- HACK: This is vibecoded, I have no idea how it worked. -->
 
   <!-- Handle w:r elements that contain inline markers -->
-  <xsl:template match="w:r[w:t[matches(., '@@MATH:INLINE:\d+@@')]]">
+  <xsl:template match="w:r[w:t[matches(., $marker-inline)]]">
     <xsl:variable name="rPr" select="w:rPr"/>
     <xsl:for-each select="w:t">
       <xsl:variable name="t" select="."/>
@@ -136,7 +147,7 @@
           <xsl:variable name="marker-num" select="local:extract-marker-number(normalize-space($t))"/>
           <xsl:copy-of select="$math-inline[$marker-num + 1]"/>
         </xsl:when>
-        <xsl:when test="matches($t, '@@MATH:INLINE:\d+@@')">
+        <xsl:when test="matches($t, $marker-inline)">
           <!-- This w:t contains markers mixed with other text, tokenize it -->
           <xsl:variable name="tokens" select="local:tokenize-inline-text(string($t))"/>
           <xsl:for-each select="$tokens">
