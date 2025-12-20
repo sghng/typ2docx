@@ -91,16 +91,12 @@
   </xsl:template>
 
   <!--
-    A util function to extract index from marker, works for both BLOCK and
-    INLINE markers.
+    A util function to extract index (digits between the last : and @@) from
+    marker, works for both BLOCK and INLINE markers.
   -->
   <xsl:function name="local:extract-marker-index" as="xs:integer">
     <xsl:param name="marker" as="xs:string"/>
-    <xsl:variable
-      name="pattern"
-      select="replace($marker-block, 'BLOCK', '(?:BLOCK|INLINE)')"
-    />
-    <xsl:sequence select="xs:integer(replace($marker, $pattern, '$1'))"/>
+    <xsl:sequence select="xs:integer(replace($marker, '.*:(.+)@@.*', '$1'))"/>
   </xsl:function>
 
   <!--
