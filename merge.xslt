@@ -45,13 +45,9 @@
     Inline marker, when in its own paragraph, can look exactly like a block
     marker, i.e. can't be distinguished by examining the ancestors. Hence we
     need two distinct markers.
-
-    - Block marker always has anchors (for whole-paragraph matching).
-    - Inline marker never has anchors (multiple can appear together in <w:t>).
-    - Capture groups are included for index extraction.
   -->
-  <xsl:variable name="marker-block" select="'@@MATH:BLOCK:(\d+)@@'"/>
-  <xsl:variable name="marker-inline" select="'@@MATH:INLINE:(\d+)@@'"/>
+  <xsl:variable name="marker-block" select="'@@MATH:BLOCK:\d+@@'"/>
+  <xsl:variable name="marker-inline" select="'@@MATH:INLINE:\d+@@'"/>
 
   <!--
     Block math marker is the only <w:t> child of the only <w:r> child of <w:p>.
