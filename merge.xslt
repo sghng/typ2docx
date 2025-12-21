@@ -50,7 +50,7 @@
     - Inline marker never has anchors (multiple can appear together in <w:t>).
     - Capture groups are included for index extraction.
   -->
-  <xsl:variable name="marker-block" select="'^@@MATH:BLOCK:(\d+)@@$'"/>
+  <xsl:variable name="marker-block" select="'@@MATH:BLOCK:(\d+)@@'"/>
   <xsl:variable name="marker-inline" select="'@@MATH:INLINE:(\d+)@@'"/>
 
   <!--
@@ -62,15 +62,6 @@
     <xsl:sequence
       select="count($p//w:t) = 1 and matches($p//w:t, $marker-block)"
     />
-  </xsl:function>
-
-  <!--
-    Inline math marker could be in the same <w:t> with other text when there's
-    no space around. We capture the <w:t> for future processing.
-  -->
-  <xsl:function name="local:is-inline" as="xs:boolean">
-    <xsl:param name="t" as="element(w:t)"/>
-    <xsl:sequence select="matches($t, $marker-inline)"/>
   </xsl:function>
 
   <!-- PROCESSING -->
@@ -91,42 +82,37 @@
   </xsl:template>
 
   <!--
-    A util function to extract index (digits between the last : and @@) from
-    marker, works for both BLOCK and INLINE markers.
+    Extract index (digits between : and @@) from marker. Works for both BLOCK
+    and INLINE markers.
   -->
   <xsl:function name="local:extract-marker-index" as="xs:integer">
     <xsl:param name="marker" as="xs:string"/>
-    <xsl:sequence select="xs:integer(replace($marker, '.*:(.+)@@.*', '$1'))"/>
+    <xsl:variable name="extracted" select="replace($marker, '.*:(\d+)@@', '$1')"/>
+    <xsl:sequence select="xs:integer($extracted)"/>
   </xsl:function>
 
   <!--
-    If it's a block marker paragraph in A, we replace it with the actual math
+    If it's a block marker paragraph in A, replace it with the actual math
     paragraph from B.
   -->
   <xsl:template match="w:p[local:is-block(.)]">
-    <xsl:variable
-      name="index"
-      select="local:extract-marker-index(string(.//w:t))"
-    />
-    <xsl:copy-of select="$math-block[$index]"/>
+    <xsl:variable name="marker" select="string(.//w:t)"/>
+    <xsl:copy-of select="$math-block[local:extract-marker-index($marker)]"/>
   </xsl:template>
 
   <!--
-    Helper function to split w:t on markers and return a sequence of elements:
-
+    Split w:t on inline markers and return a sequence of elements:
     - Marker segments replaced with the corresponding m:oMath
     - Non-marker segments wrapped in w:r elements, with rPr included
   -->
   <xsl:function name="local:process-t" as="element()*">
     <xsl:param name="t" as="element(w:t)"/>
-    <xsl:param name="rPr" as="element(w:rPr)?"/> <!-- Keep track of run properties -->
+    <xsl:param name="rPr" as="element(w:rPr)?"/>
     <xsl:analyze-string select="string($t)" regex="{$marker-inline}">
-      <!-- Marker segment: replace with math element -->
       <xsl:matching-substring>
         <xsl:variable name="marker" select="."/>
         <xsl:copy-of select="$math-inline[local:extract-marker-index($marker)]"/>
       </xsl:matching-substring>
-      <!-- Non-marker segment: create a new run with rPr -->
       <xsl:non-matching-substring>
         <w:r>
           <xsl:copy-of select="$rPr"/>
@@ -143,15 +129,13 @@
     functionality of Word, but helps keep the code simple.
   -->
   <xsl:template match="w:r[w:t[matches(., $marker-inline)]]">
-    <xsl:variable name="rPr" select="w:rPr"/> <!-- Keep track of run properties -->
-    <xsl:for-each select="*"> <!-- Iterate the run -->
+    <xsl:variable name="rPr" select="w:rPr"/>
+    <xsl:for-each select="*">
       <xsl:choose>
-        <xsl:when test="self::w:rPr"></xsl:when> <!-- Skip w:rPr -->
-        <!-- Process w:t, works the same w/ or w/out markers -->
+        <xsl:when test="self::w:rPr"/>
         <xsl:when test="self::w:t">
           <xsl:copy-of select="local:process-t(., $rPr)"/>
         </xsl:when>
-        <!-- Other elements: copy as-is in a new w:r -->
         <xsl:otherwise>
           <w:r>
             <xsl:copy-of select="$rPr"/>
