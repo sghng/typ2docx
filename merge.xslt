@@ -12,14 +12,8 @@
   xmlns:local="local"
 >
   <!-- Document paths are relative to the stylesheet location (base_dir) -->
-  <xsl:variable
-    name="doc-a"
-    select="document('a.d/word/document.xml')"
-  ></xsl:variable>
-  <xsl:variable
-    name="doc-b"
-    select="document('b.d/word/document.xml')"
-  ></xsl:variable>
+  <xsl:variable name="doc-a" select="document('a.d/word/document.xml')"/>
+  <xsl:variable name="doc-b" select="document('b.d/word/document.xml')"/>
 
   <!-- OBTAIN MATH ELEMENTS FROM B -->
 
@@ -67,24 +61,18 @@
     <xsl:apply-templates select="$doc-a/w:document"/>
   </xsl:template>
 
-  <!--
-    Identity template that copies everything from A by default. Lowest
-    specificity.
-  -->
+  <!-- Identity template that copies everything from A by default. -->
   <xsl:template match="@*|node()">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
 
-  <!--
-    Extract index (digits between : and @@) from marker. Works for both BLOCK
-    and INLINE markers.
-  -->
+  <!-- Extract index (digits between : and @@) from marker. -->
   <xsl:function name="local:extract-marker-index" as="xs:integer">
     <xsl:param name="marker" as="xs:string"/>
-    <xsl:variable name="extracted" select="replace($marker, '.*:(\d+)@@', '$1')"/>
-    <xsl:sequence select="xs:integer($extracted)"/>
+    <xsl:variable name="index" select="replace($marker, '.*:(\d+)@@', '$1')"/>
+    <xsl:sequence select="xs:integer($index)"/>
   </xsl:function>
 
   <!--
@@ -98,6 +86,7 @@
 
   <!--
     Split w:t on inline markers and return a sequence of elements:
+
     - Marker segments replaced with the corresponding m:oMath
     - Non-marker segments wrapped in w:r elements, with rPr included
   -->
