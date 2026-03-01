@@ -14,8 +14,15 @@ export class Typ2DocxContainer extends Container {
 	// ready before proxying the request. Without this, fetch() throws
 	// "container is not running, consider calling start()" when the container
 	// is cold or waking from sleep.
+	//
+	// Cloudflare Firecracker VMs take longer than the default 8s timeout to
+	// obtain an instance. Use generous timeouts: 120s to get an instance,
+	// 60s for the app to start listening on the port.
 	override async fetch(request: Request): Promise<Response> {
-		await this.startAndWaitForPorts();
+		await this.startAndWaitForPorts(this.defaultPort, {
+			instanceGetTimeoutMS: 120_000,
+			portReadyTimeoutMS: 60_000,
+		});
 		return super.fetch(request);
 	}
 }
