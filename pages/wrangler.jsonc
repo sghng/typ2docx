@@ -1,8 +1,8 @@
 {
-	"$schema": "./node_modules/wrangler/config-schema.json",
+	"$schema": "../node_modules/wrangler/config-schema.json",
 	"name": "typ2docx",
-	// Serve only from dist/ to avoid uploading Rust build artifacts at repo root
-	"pages_build_output_dir": "dist",
+	// Serve only from dist/ to avoid uploading Rust build artifacts
+	"pages_build_output_dir": "../dist",
 	"compatibility_date": "2026-03-01",
 	// Service binding: Pages Functions → Container Worker (internal, no internet hop)
 	"services": [
