@@ -9,6 +9,15 @@ export class Typ2DocxContainer extends Container {
 		PDF_SERVICES_CLIENT_ID: env.PDF_SERVICES_CLIENT_ID as string,
 		PDF_SERVICES_CLIENT_SECRET: env.PDF_SERVICES_CLIENT_SECRET as string,
 	};
+
+	// Start the container (if not already running) and wait for the port to be
+	// ready before proxying the request. Without this, fetch() throws
+	// "container is not running, consider calling start()" when the container
+	// is cold or waking from sleep.
+	override async fetch(request: Request): Promise<Response> {
+		await this.startAndWaitForPorts();
+		return super.fetch(request);
+	}
 }
 
 interface Env {
