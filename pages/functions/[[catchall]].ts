@@ -3,10 +3,11 @@ interface Env {
 }
 
 // Intercept POST requests and forward them to the Container Worker via service
-// binding. GET requests are handled by Pages' static asset serving (index.html).
+// binding. All other requests fall through to Pages static asset serving
+// (index.html for GET /, etc.).
 export const onRequest: PagesFunction<Env> = async (context) => {
 	if (context.request.method === "POST") {
 		return context.env.BACKEND.fetch(context.request);
 	}
-	return new Response("Method not allowed", { status: 405 });
+	return context.next();
 };
