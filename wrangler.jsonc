@@ -1,0 +1,36 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "typ2docx-backend",
+	"main": "src/worker.ts",
+	"compatibility_date": "2026-03-01",
+	// Do not expose this worker directly — it is only called via Pages service binding
+	"workers_dev": false,
+	"containers": [
+		{
+			"class_name": "Typ2DocxContainer",
+			"image": "./Dockerfile",
+			// Highest custom tier: 4 vCPU, minimum RAM (3 GiB/vCPU = 12 GiB), minimal disk
+			"instance_type": {
+				"vcpu": 4,
+				"memory_mib": 12288,
+				"disk_mb": 4096
+			},
+			"max_instances": 1
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "TYP2DOCX_CONTAINER",
+				"class_name": "Typ2DocxContainer"
+			}
+		]
+	},
+	// Required platform registration for the Container-backed Durable Object class
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["Typ2DocxContainer"]
+		}
+	]
+}

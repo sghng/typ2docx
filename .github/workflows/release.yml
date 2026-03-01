@@ -48,7 +48,34 @@ jobs:
 
   deploy-web-app:
     needs: build-and-publish
-    runs-on: ubuntu-slim
+    # ubuntu-latest has Docker pre-installed, required by wrangler to build the container image
+    runs-on: ubuntu-latest
     steps:
-      - name: Trigger rebuild
-        run: curl ${{ secrets.DEPLOY_HOOK }}
+      - uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Deploy Container Worker
+        # Builds & pushes the Docker image, then deploys the Worker + Container
+        run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Prepare Pages assets
+        # Pages deploy uploads dist/ — copy index.html there (dist/ may contain
+        # Python sdist artifacts from build-and-publish but that job runs on a
+        # separate runner, so dist/ is clean here)
+        run: mkdir -p dist && cp index.html dist/
+
+      - name: Deploy Pages
+        # --cwd pages: use pages/wrangler.jsonc (pages_build_output_dir = ../dist)
+        # Pages CLI does not support --config for a non-default path
+        run: bunx wrangler pages deploy --cwd pages --project-name typ2docx --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

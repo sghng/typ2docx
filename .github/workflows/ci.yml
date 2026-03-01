@@ -10,6 +10,46 @@ on:
     branches: [main]
 
 jobs:
+  preview:
+    name: Deploy Pages preview
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Prepare Pages assets
+        run: mkdir -p dist && cp index.html dist/
+
+      - name: Deploy Pages preview
+        id: deploy
+        run: |
+          output=$(bunx wrangler pages deploy \
+            --cwd pages \
+            --project-name typ2docx \
+            --branch "${{ github.head_ref }}" \
+            --commit-hash "${{ github.sha }}" \
+            --commit-message "${{ github.event.pull_request.title }}" \
+            --commit-dirty=true \
+            2>&1)
+          echo "$output"
+          url=$(echo "$output" | grep -oP 'https://[a-f0-9]+\.typ2docx\.pages\.dev')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
   test:
     runs-on: ubuntu-latest
 
