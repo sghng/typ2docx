@@ -1,0 +1,14 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "typ2docx",
+	// index.html lives at the repo root
+	"pages_build_output_dir": ".",
+	"compatibility_date": "2026-03-01",
+	// Service binding: Pages Functions → Container Worker (internal, no internet hop)
+	"services": [
+		{
+			"binding": "BACKEND",
+			"service": "typ2docx-backend"
+		}
+	]
+}

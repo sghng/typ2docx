@@ -1,0 +1,27 @@
+import { env } from "cloudflare:workers";
+import { Container, getRandom } from "@cloudflare/containers";
+
+// Container class — extends DurableObject under the hood (platform requirement).
+// No sleepAfter: container shuts down as soon as it goes idle.
+export class Typ2DocxContainer extends Container {
+	defaultPort = 10000;
+	envVars = {
+		PDF_SERVICES_CLIENT_ID: env.PDF_SERVICES_CLIENT_ID as string,
+		PDF_SERVICES_CLIENT_SECRET: env.PDF_SERVICES_CLIENT_SECRET as string,
+	};
+}
+
+interface Env {
+	TYP2DOCX_CONTAINER: DurableObjectNamespace;
+	PDF_SERVICES_CLIENT_ID: string;
+	PDF_SERVICES_CLIENT_SECRET: string;
+}
+
+export default {
+	async fetch(request: Request, env: Env): Promise<Response> {
+		// Single instance (max_instances=1, low traffic). getRandom with n=1
+		// always resolves to the same instance, waking it if asleep.
+		const container = await getRandom(env.TYP2DOCX_CONTAINER, 1);
+		return container.fetch(request);
+	},
+};
