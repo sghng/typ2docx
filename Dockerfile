@@ -28,4 +28,4 @@ COPY --from=typ2docx /root/.local/bin/typ2docx /usr/local/bin/
 COPY --from=typ2docx /root/.local/share/uv/ /root/.local/share/uv/
 COPY server.ts /
 COPY index.html /
-CMD ["bun", "server.ts"]
+CMD ["bun", "/server.ts"]
