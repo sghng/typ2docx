@@ -66,6 +66,27 @@ The following runtime dependencies are also required:
   should be available in `PATH`.
 - One of the supported [`.pdf` to `.docx` engines](#pdf-to-docx-engines).
 
+### Nix
+
+typ2docx is also available in [nixpkgs](https://search.nixos.org/packages?channel=unstable&query=typ2docx)
+
+To install typ2docx on NixOS, put the following lines into your `configuration.nix`
+
+```nix
+environment.systemPackages = [
+  pkgs.typ2docx
+];
+```
+
+To enter a shell environment with typ2docx:
+
+```sh
+# New nix3 commands
+nix shell nixpkgs#typ2docx
+# Legacy nix-shell
+nix-shell -p typ2docx
+```
+
 ## Usage
 
 Once the tool is installed, invoke it with the path to the entry point of your
