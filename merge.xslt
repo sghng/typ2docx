@@ -47,9 +47,10 @@
   <!-- FIND MARKERS IN A -->
 
   <!--
-    Inline marker, when in its own paragraph, can look exactly like a block
-    marker, i.e. can't be distinguished by examining the ancestors. Hence we
-    need two distinct markers.
+    Markers encode their type (BLOCK/INLINE) because structure alone can't
+    distinguish them. An inline marker in its own paragraph looks identical
+    to a block marker. marker-block is used by is-block for the paragraph-level
+    fast path; marker-any drives run-level replacement via lookup-math.
   -->
   <xsl:variable name="marker-block" select="'@@MATH:BLOCK:\d+@@'"/>
   <xsl:variable name="marker-any" select="'@@MATH:(?:BLOCK|INLINE):\d+@@'"/>
