@@ -23,6 +23,12 @@
     as="element(w:p)*"
     select="$doc-b//w:p[m:oMathPara]"
   />
+  <!-- Block math content as m:oMath, used when marker isn't isolated. -->
+  <xsl:variable
+    name="math-block-inline"
+    as="element(m:oMath)*"
+    select="$doc-b//w:p[m:oMathPara]/m:oMathPara/m:oMath"
+  />
   <!--
     Inline math is a <m:oMath> child of <w:p> (there can be several), that is
     not in m:oMathPara.
@@ -50,7 +56,7 @@
   <xsl:function name="local:is-block" as="xs:boolean">
     <xsl:param name="p" as="element(w:p)"/>
     <xsl:sequence
-      select="count($p//w:t) = 1 and matches($p//w:t, $marker-block)"
+      select="matches(string-join($p//w:t, ''), concat('^', $marker-block, '$'))"
     />
   </xsl:function>
 
@@ -108,6 +114,30 @@
   </xsl:function>
 
   <!--
+    Split w:t on block markers and replace marker segments with corresponding
+    m:oMath. This is a fallback for converters that merge neighboring content
+    and marker into one paragraph.
+  -->
+  <xsl:function name="local:process-t-block" as="element()*">
+    <xsl:param name="t" as="element(w:t)"/>
+    <xsl:param name="rPr" as="element(w:rPr)?"/>
+    <xsl:analyze-string select="string($t)" regex="{$marker-block}">
+      <xsl:matching-substring>
+        <xsl:variable name="marker" select="."/>
+        <xsl:copy-of
+          select="$math-block-inline[local:extract-marker-index($marker)]"
+        />
+      </xsl:matching-substring>
+      <xsl:non-matching-substring>
+        <w:r>
+          <xsl:copy-of select="$rPr"/>
+          <w:t><xsl:value-of select="."/></w:t>
+        </w:r>
+      </xsl:non-matching-substring>
+    </xsl:analyze-string>
+  </xsl:function>
+
+  <!--
     Handle w:r elements that contain inline markers.
 
     This'll create more runs than needed, which doesn't interfere with the
@@ -120,6 +150,28 @@
         <xsl:when test="self::w:rPr"/>
         <xsl:when test="self::w:t">
           <xsl:copy-of select="local:process-t(., $rPr)"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <w:r>
+            <xsl:copy-of select="$rPr"/>
+            <xsl:copy-of select="."/>
+          </w:r>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:for-each>
+  </xsl:template>
+
+  <!--
+    Fallback for block markers that appear inside a mixed-content paragraph.
+    We inject m:oMath at marker position to avoid leaving raw marker text.
+  -->
+  <xsl:template match="w:r[w:t[matches(., $marker-block)]]" priority="2">
+    <xsl:variable name="rPr" select="w:rPr"/>
+    <xsl:for-each select="*">
+      <xsl:choose>
+        <xsl:when test="self::w:rPr"/>
+        <xsl:when test="self::w:t">
+          <xsl:copy-of select="local:process-t-block(., $rPr)"/>
         </xsl:when>
         <xsl:otherwise>
           <w:r>
