@@ -17,27 +17,13 @@
 
   <!-- OBTAIN MATH ELEMENTS FROM B -->
 
-  <!-- Block math paragraphs contain m:oMathPara -->
+  <!-- Block math: paragraphs containing m:oMathPara -->
   <xsl:variable
     name="math-block"
     as="element(w:p)*"
     select="$doc-b//w:p[m:oMathPara]"
   />
-  <!--
-    Block math as bare m:oMath (unwrapped from m:oMathPara). Used when a block
-    marker shares a paragraph with other content, e.g. pdf2docx merges nearby
-    headings and the marker into one w:p, so we can't replace the whole
-    paragraph and must inject the math inline instead.
-  -->
-  <xsl:variable
-    name="math-block-inline"
-    as="element(m:oMath)*"
-    select="$doc-b//w:p[m:oMathPara]/m:oMathPara/m:oMath"
-  />
-  <!--
-    Inline math is a <m:oMath> child of <w:p> (there can be several), that is
-    not in m:oMathPara.
-  -->
+  <!-- Inline math: m:oMath children of w:p not wrapped in m:oMathPara -->
   <xsl:variable
     name="math-inline"
     as="element(m:oMath)*"
@@ -89,13 +75,17 @@
     <xsl:sequence select="xs:integer(replace($marker, '.*:(\d+)@@', '$1'))"/>
   </xsl:function>
 
-  <!-- Look up the m:oMath for any marker string, block or inline. -->
+  <!--
+    Look up the m:oMath for any marker. For block markers that ended up in a
+    mixed paragraph (e.g. pdf2docx merging headings into one w:p), we unwrap
+    the m:oMath from the block paragraph's m:oMathPara.
+  -->
   <xsl:function name="local:lookup-math" as="element(m:oMath)?">
     <xsl:param name="marker" as="xs:string"/>
     <xsl:variable name="i" select="local:extract-marker-index($marker)"/>
     <xsl:sequence select="
       if (starts-with($marker, '@@MATH:BLOCK:'))
-      then $math-block-inline[$i]
+      then $math-block[$i]/m:oMathPara/m:oMath
       else $math-inline[$i]
     "/>
   </xsl:function>
