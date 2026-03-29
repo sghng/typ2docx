@@ -17,16 +17,13 @@
 
   <!-- OBTAIN MATH ELEMENTS FROM B -->
 
-  <!-- Block math paragraphs contain m:oMathPara -->
+  <!-- Block math: paragraphs containing m:oMathPara -->
   <xsl:variable
     name="math-block"
     as="element(w:p)*"
     select="$doc-b//w:p[m:oMathPara]"
   />
-  <!--
-    Inline math is a <m:oMath> child of <w:p> (there can be several), that is
-    not in m:oMathPara.
-  -->
+  <!-- Inline math: m:oMath children of w:p not wrapped in m:oMathPara -->
   <xsl:variable
     name="math-inline"
     as="element(m:oMath)*"
@@ -36,21 +33,25 @@
   <!-- FIND MARKERS IN A -->
 
   <!--
-    Inline marker, when in its own paragraph, can look exactly like a block
-    marker, i.e. can't be distinguished by examining the ancestors. Hence we
-    need two distinct markers.
+    Markers encode their type (BLOCK/INLINE) because structure alone can't
+    distinguish them. An inline marker in its own paragraph looks identical
+    to a block marker. marker-block is used by is-block for the paragraph-level
+    fast path; marker-any drives run-level replacement via lookup-math.
   -->
   <xsl:variable name="marker-block" select="'@@MATH:BLOCK:\d+@@'"/>
-  <xsl:variable name="marker-inline" select="'@@MATH:INLINE:\d+@@'"/>
+  <xsl:variable name="marker-any" select="'@@MATH:(?:BLOCK|INLINE):\d+@@'"/>
 
   <!--
-    Block math marker is the only <w:t> child of the only <w:r> child of <w:p>.
-    We capture and swap the whole <w:p>.
+    A paragraph is a block marker when its combined text is exclusively a block
+    marker. The old check required exactly one w:t node, which fails when
+    converters like pdf2docx merge the marker paragraph with surrounding
+    content (e.g. headings) into a single w:p, is-block correctly returns
+    false in that case, letting the run-level template handle the marker.
   -->
   <xsl:function name="local:is-block" as="xs:boolean">
     <xsl:param name="p" as="element(w:p)"/>
     <xsl:sequence
-      select="count($p//w:t) = 1 and matches($p//w:t, $marker-block)"
+      select="matches(string-join($p//w:t, ''), concat('^', $marker-block, '$'))"
     />
   </xsl:function>
 
@@ -68,11 +69,25 @@
     </xsl:copy>
   </xsl:template>
 
-  <!-- Extract index (digits between : and @@) from marker. -->
+  <!-- Extract index (digits between last : and @@) from marker. -->
   <xsl:function name="local:extract-marker-index" as="xs:integer">
     <xsl:param name="marker" as="xs:string"/>
-    <xsl:variable name="index" select="replace($marker, '.*:(\d+)@@', '$1')"/>
-    <xsl:sequence select="xs:integer($index)"/>
+    <xsl:sequence select="xs:integer(replace($marker, '.*:(\d+)@@', '$1'))"/>
+  </xsl:function>
+
+  <!--
+    Look up the m:oMath for any marker. For block markers that ended up in a
+    mixed paragraph (e.g. pdf2docx merging headings into one w:p), we unwrap
+    the m:oMath from the block paragraph's m:oMathPara.
+  -->
+  <xsl:function name="local:lookup-math" as="element(m:oMath)?">
+    <xsl:param name="marker" as="xs:string"/>
+    <xsl:variable name="i" select="local:extract-marker-index($marker)"/>
+    <xsl:sequence select="
+      if (starts-with($marker, '@@MATH:BLOCK:'))
+      then $math-block[$i]/m:oMathPara/m:oMath
+      else $math-inline[$i]
+    "/>
   </xsl:function>
 
   <!--
@@ -80,12 +95,12 @@
     paragraph from B.
   -->
   <xsl:template match="w:p[local:is-block(.)]">
-    <xsl:variable name="marker" select="string(.//w:t)"/>
+    <xsl:variable name="marker" select="string-join(.//w:t, '')"/>
     <xsl:copy-of select="$math-block[local:extract-marker-index($marker)]"/>
   </xsl:template>
 
   <!--
-    Split w:t on inline markers and return a sequence of elements:
+    Split w:t on markers and return a sequence of elements:
 
     - Marker segments replaced with the corresponding m:oMath
     - Non-marker segments wrapped in w:r elements, with rPr included
@@ -93,10 +108,9 @@
   <xsl:function name="local:process-t" as="element()*">
     <xsl:param name="t" as="element(w:t)"/>
     <xsl:param name="rPr" as="element(w:rPr)?"/>
-    <xsl:analyze-string select="string($t)" regex="{$marker-inline}">
+    <xsl:analyze-string select="string($t)" regex="{$marker-any}">
       <xsl:matching-substring>
-        <xsl:variable name="marker" select="."/>
-        <xsl:copy-of select="$math-inline[local:extract-marker-index($marker)]"/>
+        <xsl:copy-of select="local:lookup-math(.)"/>
       </xsl:matching-substring>
       <xsl:non-matching-substring>
         <w:r>
@@ -108,12 +122,12 @@
   </xsl:function>
 
   <!--
-    Handle w:r elements that contain inline markers.
+    Handle w:r elements that contain inline or non-isolated block markers.
 
     This'll create more runs than needed, which doesn't interfere with the
     functionality of Word, but helps keep the code simple.
   -->
-  <xsl:template match="w:r[w:t[matches(., $marker-inline)]]">
+  <xsl:template match="w:r[w:t[matches(., $marker-any)]]">
     <xsl:variable name="rPr" select="w:rPr"/>
     <xsl:for-each select="*">
       <xsl:choose>
