@@ -9,7 +9,7 @@ path = "extract.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.28", features = ["extension-module"] }
+pyo3 = { version = "0.29", features = ["extension-module"] }
 typst = "0.14"
 typst-eval = "0.14"
 typst-kit = "0.14"
