@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.28", features = ["extension-module"] }
 typst = "0.14"
-typst-eval = "0.14"
+typst-eval = "0.15"
 typst-kit = "0.14"
