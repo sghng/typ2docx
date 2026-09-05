@@ -1,5 +1,15 @@
 # `typ2docx`: Convert Math-Rich Typst Project to Microsoft Word Format
 
+> [!WARNING]
+>
+> I created this project as a workaround when Pandoc's support for Typst was
+> very incomplete. Recently I saw that the author of Pandoc has put more effort
+> into implementing Typst support, and with the help of agentic programming a
+> comprehensive implementation is more feasible than ever. Therefore I am
+> archiving this project and will help refine Pandoc's Typst support instead.
+>
+> Thanks so much for using this tool and supporting my development!
+
 `typ2docx` is a command line tool that converts a Typst project to Microsoft
 Word `.docx` format, with tables, cross-references, most of the styles, and most
 importantly the math markups preserved. It combines the mature, comprehensive
