@@ -1,0 +1,16 @@
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -580,6 +580,10 @@
+     <w:tblPr>
+       <w:jc w:val="center" />
+       <w:tblInd w:w="0" w:type="dxa" />
++      <w:tblBorders>
++        <w:top w:val="single" />
++        <w:bottom w:val="single" />
++      </w:tblBorders>
+       <w:tblCellMar>
+         <w:top w:w="0" w:type="dxa" />
+         <w:left w:w="108" w:type="dxa" />
+# Three-line tables: add the top and bottom rules. The rule under the
+# header row already ships in the stock's firstRow formatting; the stock
+# has no other borders to suppress.
