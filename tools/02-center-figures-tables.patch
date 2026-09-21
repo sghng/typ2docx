@@ -8,15 +8,7 @@
        <w:tblInd w:w="0" w:type="dxa" />
        <w:tblCellMar>
          <w:top w:w="0" w:type="dxa" />
-@@ -616,6 +617,7 @@
-     <w:link w:val="BodyTextChar" />
-     <w:pPr>
-       <w:spacing w:before="0" w:after="120" />
-+      <w:jc w:val="left" />
-     </w:pPr>
-     <w:rPr>
-       <w:i />
-@@ -635,6 +637,9 @@
+@@ -635,6 +636,9 @@
    <w:style w:type="paragraph" w:customStyle="1" w:styleId="Figure">
      <w:name w:val="Figure" />
      <w:basedOn w:val="Normal" />
@@ -26,4 +18,3 @@
    </w:style>
    <w:style w:type="paragraph" w:customStyle="1" w:styleId="CaptionedFigure">
      <w:name w:val="Captioned Figure" />
-# Figures and tables centered; captions explicitly left-aligned.

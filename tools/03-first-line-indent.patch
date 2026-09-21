@@ -1,17 +1,9 @@
-# Every body paragraph gets a 0.5 in first-line indent and zero
-# inter-paragraph spacing (the chosen typographic model). Compact (tight
-# lists) suppresses the indent. Floats and block boundaries borrowed their
-# separation from body paragraph spacing in the pristine stock, so they
-# keep it explicitly: FirstParagraph before (below headings, tables,
-# figures, lists, quotes), TableCaption and Figure before (above floats).
 --- a/word/styles.xml
 +++ b/word/styles.xml
-@@ -26,7 +26,8 @@
-     <w:link w:val="BodyTextChar" />
+@@ -27,6 +27,7 @@
      <w:qFormat />
      <w:pPr>
--      <w:spacing w:before="180" w:after="180" />
-+      <w:spacing w:before="0" w:after="0" />
+       <w:spacing w:before="180" w:after="180" />
 +      <w:ind w:firstLine="720" />
      </w:pPr>
    </w:style>
@@ -21,7 +13,7 @@
      <w:next w:val="BodyText" />
      <w:qFormat />
 +    <w:pPr>
-+      <w:spacing w:before="180" />
++      <w:spacing w:before="240" />
 +    </w:pPr>
    </w:style>
    <w:style w:type="paragraph" w:customStyle="1" w:styleId="Compact">
@@ -38,7 +30,7 @@
      <w:basedOn w:val="Caption" />
      <w:pPr>
        <w:keepNext />
-+      <w:spacing w:before="180" />
++      <w:spacing w:before="240" />
      </w:pPr>
    </w:style>
    <w:style w:type="paragraph" w:customStyle="1" w:styleId="ImageCaption">
@@ -46,7 +38,7 @@
      <w:name w:val="Figure" />
      <w:basedOn w:val="Normal" />
      <w:pPr>
-+      <w:spacing w:before="180" />
++      <w:spacing w:before="240" />
        <w:jc w:val="center" />
      </w:pPr>
    </w:style>

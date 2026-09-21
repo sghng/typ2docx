@@ -1,35 +1,27 @@
-# Typ2docx change shading: ShadingBlock/ShadingInline give Word's
-# fill-selection look (w:shd, covers display math). Shading adds no
-# spacing of its own; shaded regions keep the body rhythm. ShadedTable
-# shades a table ending a region: through the div the block shading
-# cannot reach a table and the div would leave the next paragraph in
-# BodyText with no margin below it. The anchor (last style close +
-# styles close) exists in every chain state, so this patch is
-# self-contained and order-independent.
+# Typ2docx marking colors: the default highlight pen covers text runs;
+# pandoc's writer never applies it to OMML math runs, so math-bearing
+# paragraphs in marked regions take the ShadingBlock band and marked
+# trailing tables take the ShadedTable fill, both at the pen's yellow.
+# Shading adds no spacing of its own; the stock's paragraph rhythm
+# stands. The anchor (last style close + styles close) exists in every
+# chain state, so this patch is self-contained and order-independent.
 --- a/word/styles.xml
 +++ b/word/styles.xml
-@@ -706,2 +706,24 @@
+@@ -706,2 +706,17 @@
    </w:style>
 +  <w:style w:type="paragraph" w:styleId="ShadingBlock">
 +    <w:name w:val="ShadingBlock" />
 +    <w:basedOn w:val="BodyText" />
 +    <w:qFormat />
 +    <w:pPr>
-+      <w:shd w:val="clear" w:color="auto" w:fill="FFF3CD" />
++      <w:shd w:val="clear" w:color="auto" w:fill="FFFF00" />
 +    </w:pPr>
-+  </w:style>
-+  <w:style w:type="character" w:styleId="ShadingInline">
-+    <w:name w:val="ShadingInline" />
-+    <w:qFormat />
-+    <w:rPr>
-+      <w:shd w:val="clear" w:color="auto" w:fill="FFF3CD" />
-+    </w:rPr>
 +  </w:style>
 +  <w:style w:type="table" w:customStyle="1" w:styleId="ShadedTable">
 +    <w:name w:val="ShadedTable" />
 +    <w:basedOn w:val="Table" />
 +    <w:tblPr>
-+      <w:shd w:val="clear" w:color="auto" w:fill="FFF3CD" />
++      <w:shd w:val="clear" w:color="auto" w:fill="FFFF00" />
 +    </w:tblPr>
 +  </w:style>
  </w:styles>
