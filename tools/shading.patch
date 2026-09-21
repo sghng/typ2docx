@@ -1,7 +1,13 @@
+# Typ2docx change shading: ShadingBlock/ShadingInline give Word's
+# fill-selection look (w:shd, covers display math). ShadingBlock keeps
+# after=180 so a paragraph following a shaded region keeps its margin.
+# ShadedTable shades a table-only region directly: through the div the
+# block shading would vanish and the writer would leave the following
+# paragraph in BodyText with no margin below the table.
 --- a/word/styles.xml
 +++ b/word/styles.xml
-@@ -697,4 +697,19 @@
-       <w:color w:val="365F91" w:themeColor="accent1" w:themeShade="BF" />
+@@ -704,4 +704,27 @@
+       <w:color w:val="000000" />
      </w:rPr>
    </w:style>
 +  <w:style w:type="paragraph" w:styleId="ShadingBlock">
@@ -10,6 +16,7 @@
 +    <w:qFormat />
 +    <w:pPr>
 +      <w:shd w:val="clear" w:color="auto" w:fill="FFF3CD" />
++      <w:spacing w:after="180" />
 +    </w:pPr>
 +  </w:style>
 +  <w:style w:type="character" w:styleId="ShadingInline">
@@ -18,5 +25,12 @@
 +    <w:rPr>
 +      <w:shd w:val="clear" w:color="auto" w:fill="FFF3CD" />
 +    </w:rPr>
++  </w:style>
++  <w:style w:type="table" w:customStyle="1" w:styleId="ShadedTable">
++    <w:name w:val="ShadedTable" />
++    <w:basedOn w:val="Table" />
++    <w:tblPr>
++      <w:shd w:val="clear" w:color="auto" w:fill="FFF3CD" />
++    </w:tblPr>
 +  </w:style>
  </w:styles>
