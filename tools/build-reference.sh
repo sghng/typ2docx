@@ -8,8 +8,7 @@
 #
 # The numbers are the canonical order. One order fact is load-bearing: the
 # float hunks of 03-first-line-indent carry jc="center" context that only
-# exists after 02-center-figures-tables. 04-shading anchors on the EOF
-# style close, so it is order-independent. fuzz=0 makes any drift (wrong
+# exists after 02-center-figures-tables. fuzz=0 makes any drift (wrong
 # order, changed template) fail loudly instead of re-anchoring a hunk.
 #
 # Nothing is cached: abstract typ2docx rebuilds a fresh stock into a
