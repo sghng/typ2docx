@@ -1,6 +1,6 @@
-# Typ2docx title: 14 pt, bold (centered was pristine). TitleChar
-# mirrors the paragraph style so the linked character style agrees in
-# Word's style hierarchy.
+# Typ2docx title: body size (12 pt), bold (centered was pristine).
+# APA gives the title no special size. TitleChar mirrors the paragraph
+# style so the linked character style agrees in Word's style hierarchy.
 --- a/word/styles.xml
 +++ b/word/styles.xml
 @@ -65,8 +65,9 @@
@@ -10,8 +10,8 @@
 -      <w:sz w:val="56" />
 -      <w:szCs w:val="56" />
 +      <w:b />
-+      <w:sz w:val="28" />
-+      <w:szCs w:val="28" />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
      </w:rPr>
    </w:style>
    <w:style w:type="character" w:customStyle="1"
@@ -22,8 +22,8 @@
 -      <w:sz w:val="56" />
 -      <w:szCs w:val="56" />
 +      <w:b />
-+      <w:sz w:val="28" />
-+      <w:szCs w:val="28" />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
      </w:rPr>
    </w:style>
    <w:style w:type="paragraph" w:styleId="Subtitle">

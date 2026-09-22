@@ -1,0 +1,109 @@
+# Typ2docx headings, APA levels: all at body size (pristine stock is
+# not bold, despite Word's built-in heading defaults), heading 1 bold
+# and centered, heading 2 bold flush left, heading 3 bold italic flush
+# left, and no before/after spacing (APA adds no gap around headings;
+# double line spacing applies to heading lines like any other).
+# HeadingChar styles mirror.
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -202,16 +202,18 @@
+     <w:pPr>
+       <w:keepNext />
+       <w:keepLines />
+-      <w:spacing w:before="360" w:after="80" />
++      <w:spacing w:before="0" w:after="0" />
+       <w:outlineLvl w:val="0" />
++      <w:jc w:val="center" />
+     </w:pPr>
+     <w:rPr>
+       <w:rFonts w:asciiTheme="majorHAnsi"
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="40" />
+-      <w:szCs w:val="40" />
++      <w:b />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="paragraph" w:styleId="Heading2">
+@@ -227,7 +229,7 @@
+     <w:pPr>
+       <w:keepNext />
+       <w:keepLines />
+-      <w:spacing w:before="160" w:after="80" />
++      <w:spacing w:before="0" w:after="0" />
+       <w:outlineLvl w:val="1" />
+     </w:pPr>
+     <w:rPr>
+@@ -235,8 +237,9 @@
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="32" />
+-      <w:szCs w:val="32" />
++      <w:b />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="paragraph" w:styleId="Heading3">
+@@ -252,15 +255,17 @@
+     <w:pPr>
+       <w:keepNext />
+       <w:keepLines />
+-      <w:spacing w:before="160" w:after="80" />
++      <w:spacing w:before="0" w:after="0" />
+       <w:outlineLvl w:val="2" />
+     </w:pPr>
+     <w:rPr>
+       <w:rFonts w:eastAsiaTheme="majorEastAsia"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="28" />
+-      <w:szCs w:val="28" />
++      <w:b />
++      <w:i />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="paragraph" w:styleId="Heading4">
+@@ -412,8 +417,9 @@
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="40" />
+-      <w:szCs w:val="40" />
++      <w:b />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="character" w:customStyle="1"
+@@ -429,8 +435,9 @@
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="32" />
+-      <w:szCs w:val="32" />
++      <w:b />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="character" w:customStyle="1"
+@@ -445,8 +452,10 @@
+       <w:rFonts w:eastAsiaTheme="majorEastAsia"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="28" />
+-      <w:szCs w:val="28" />
++      <w:b />
++      <w:i />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="character" w:customStyle="1"

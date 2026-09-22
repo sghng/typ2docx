@@ -1,0 +1,42 @@
+# Typ2docx page number: a header part with a right-aligned PAGE field
+# (APA: page number top right). The docx writer carries the reference
+# stock's headers into the output and regenerates their content-type
+# overrides, so the stock is the only place this lives.
+--- a/word/_rels/document.xml.rels
++++ b/word/_rels/document.xml.rels
+@@ -1,2 +1,2 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Id="rId1" Target="numbering.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Id="rId2" Target="styles.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Id="rId3" Target="settings.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings" Id="rId4" Target="webSettings.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable" Id="rId5" Target="fontTable.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Id="rId6" Target="theme/theme1.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Id="rId7" Target="footnotes.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Id="rId8" Target="comments.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Id="rId30" Target="http://example.com" TargetMode="External" /></Relationships>
++<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Id="rId1" Target="numbering.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Id="rId2" Target="styles.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Id="rId3" Target="settings.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings" Id="rId4" Target="webSettings.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable" Id="rId5" Target="fontTable.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Id="rId6" Target="theme/theme1.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Id="rId7" Target="footnotes.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Id="rId8" Target="comments.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Id="rId9" Target="header1.xml" /><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Id="rId30" Target="http://example.com" TargetMode="External" /></Relationships>
+--- a/word/document.xml
++++ b/word/document.xml
+@@ -322,6 +322,7 @@
+       </w:r>
+     </w:p>
+     <w:sectPr>
++      <w:headerReference w:type="default" r:id="rId9" />
+       <w:footnotePr>
+         <w:numRestart w:val="eachSect" />
+       </w:footnotePr>
+--- a/[Content_Types].xml
++++ b/[Content_Types].xml
+@@ -1,2 +1,2 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml" /><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" /><Override PartName="/word/webSettings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml" /><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml" /><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml" /><Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml" /><Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml" /><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml" /><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml" /><Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml" /><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml" /><Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml" /><Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml" /></Types>
++<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml" /><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" /><Override PartName="/word/webSettings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml" /><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml" /><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml" /><Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml" /><Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml" /><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml" /><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml" /><Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml" /><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml" /><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml" /><Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml" /><Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml" /></Types>
+--- /dev/null
++++ b/word/header1.xml
+@@ -0,0 +1,13 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
++  <w:p>
++    <w:pPr>
++      <w:jc w:val="right" />
++    </w:pPr>
++    <w:fldSimple w:instr=" PAGE ">
++      <w:r>
++        <w:t>1</w:t>
++      </w:r>
++    </w:fldSimple>
++  </w:p>
++</w:hdr>

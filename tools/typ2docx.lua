@@ -15,7 +15,10 @@
 -- region trims them before its trailing-table check. A region ending
 -- in a table hoists the table out so the following paragraph regains
 -- its FirstParagraph margin. A figure wrapping only a table flattens
--- to the table (caption position and numbering).
+-- to the table (caption position and numbering). APA: the references
+-- section starts on a new page, so a raw page-break run goes at the
+-- start of the header preceding citeproc's empty refs div (inside
+-- the header paragraph, so the break leaves no blank line).
 
 local CAPMARK = "caption-mark"
 
@@ -165,4 +168,21 @@ function Figure(el)
     return t
   end
   return nil
+end
+
+function Pandoc(doc)
+  for i, b in ipairs(doc.blocks) do
+    if b.t == "Div" and b.identifier == "refs" then
+      local prev = doc.blocks[i - 1]
+      if prev ~= nil and prev.t == "Header" then
+        prev.content:insert(1, pandoc.RawInline("openxml",
+          '<w:r><w:br w:type="page" /></w:r>'))
+      else
+        doc.blocks:insert(i, pandoc.RawBlock("openxml",
+          '<w:p><w:r><w:br w:type="page" /></w:r></w:p>'))
+      end
+      break
+    end
+  end
+  return doc
 end
