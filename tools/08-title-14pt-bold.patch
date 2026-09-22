@@ -1,0 +1,29 @@
+# Typ2docx title: 14 pt, bold (centered was pristine). TitleChar
+# mirrors the paragraph style so the linked character style agrees in
+# Word's style hierarchy.
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -65,8 +65,9 @@
+       <w:rFonts w:asciiTheme="majorHAnsi"
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+-      <w:sz w:val="56" />
+-      <w:szCs w:val="56" />
++      <w:b />
++      <w:sz w:val="28" />
++      <w:szCs w:val="28" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="character" w:customStyle="1"
+@@ -80,8 +81,9 @@
+       <w:rFonts w:asciiTheme="majorHAnsi"
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+-      <w:sz w:val="56" />
+-      <w:szCs w:val="56" />
++      <w:b />
++      <w:sz w:val="28" />
++      <w:szCs w:val="28" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="paragraph" w:styleId="Subtitle">

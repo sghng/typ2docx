@@ -1,0 +1,29 @@
+# Typ2docx heading 2: body size and underlined (pristine was 16 pt,
+# no underline); left aligned is Word's default and stays.
+# Heading2Char mirrors.
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -233,8 +233,9 @@
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="32" />
+-      <w:szCs w:val="32" />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
++      <w:u w:val="single" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="paragraph" w:styleId="Heading3">
+@@ -427,8 +428,9 @@
+       w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi"
+       w:cstheme="majorBidi" />
+       <w:color w:val="000000" />
+-      <w:sz w:val="32" />
+-      <w:szCs w:val="32" />
++      <w:sz w:val="24" />
++      <w:szCs w:val="24" />
++      <w:u w:val="single" />
+     </w:rPr>
+   </w:style>
+   <w:style w:type="character" w:customStyle="1"

@@ -1,0 +1,34 @@
+# Typ2docx rhythm: double line spacing for body text. FirstParagraph
+# gets the value pinned explicitly (its own w:spacing would otherwise
+# shadow the inherited line value); Compact (table cells, tight lists)
+# pins single spacing so tables stay tight. Headings, title, and
+# captions keep their own spacing.
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -26,7 +26,7 @@
+     <w:link w:val="BodyTextChar" />
+     <w:qFormat />
+     <w:pPr>
+-      <w:spacing w:before="180" w:after="180" />
++      <w:spacing w:before="180" w:after="180" w:line="480" w:lineRule="auto" />
+       <w:ind w:firstLine="720" />
+     </w:pPr>
+   </w:style>
+@@ -36,7 +36,7 @@
+     <w:next w:val="BodyText" />
+     <w:qFormat />
+     <w:pPr>
+-      <w:spacing w:before="240" />
++      <w:spacing w:before="240" w:line="480" w:lineRule="auto" />
+     </w:pPr>
+   </w:style>
+   <w:style w:type="paragraph" w:customStyle="1" w:styleId="Compact">
+@@ -44,7 +44,7 @@
+     <w:basedOn w:val="BodyText" />
+     <w:qFormat />
+     <w:pPr>
+-      <w:spacing w:before="36" w:after="36" />
++      <w:spacing w:before="36" w:after="36" w:line="240" w:lineRule="auto" />
+       <w:ind w:firstLine="0" />
+     </w:pPr>
+   </w:style>
