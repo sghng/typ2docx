@@ -1,0 +1,16 @@
+# Typ2docx captions: upright, per the house convention (pandoc's
+# stock italicizes Caption; Word's own built-in Caption is not italic,
+# and APA italicizes only the title and the "Note." marker, which the
+# source carries as emphasis runs either way).
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -633,9 +633,6 @@
+     <w:pPr>
+       <w:spacing w:before="0" w:after="120" />
+     </w:pPr>
+-    <w:rPr>
+-      <w:i />
+-    </w:rPr>
+   </w:style>
+   <w:style w:type="paragraph" w:customStyle="1" w:styleId="TableCaption">
+     <w:name w:val="Table Caption" />
