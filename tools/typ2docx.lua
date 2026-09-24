@@ -12,10 +12,10 @@
 -- also emits whitespace-only paragraphs for comment lines and bracket
 -- newlines, and anchor-only paragraphs for labels; Typst source never
 -- carries an intentional empty paragraph, so they are dropped, and a
--- region trims them before its trailing-table check. A region ending
--- in a table hoists the table out so the following paragraph regains
--- its FirstParagraph margin. A figure wrapping only a table flattens
--- to the table (caption position and numbering). APA: the references
+-- region trims them from its edges. A figure wrapping
+-- only a table flattens to the table (caption position and numbering).
+-- Tables stay inside their mark region to the writer, which pens every
+-- run in them as it does for text and math. APA: the references
 -- section starts on a new page, so a raw page-break run goes at the
 -- start of the header preceding citeproc's empty refs div (inside
 -- the header paragraph, so the break leaves no blank line), and every
@@ -110,13 +110,6 @@ function Div(el)
   end
   while #el.content > 0 and blank_para(el.content[#el.content]) do
     el.content:remove(#el.content)
-  end
-  local last = el.content[#el.content]
-  if last ~= nil and last.t == "Table" then
-    el.content:remove(#el.content)
-    captioned(last, true)
-    if #el.content == 0 then return last end
-    return pandoc.List({ el, last })
   end
   el.content = el.content:map(function(b)
     if b.t == "Table" then
