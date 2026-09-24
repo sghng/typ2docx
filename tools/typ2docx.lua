@@ -18,7 +18,13 @@
 -- to the table (caption position and numbering). APA: the references
 -- section starts on a new page, so a raw page-break run goes at the
 -- start of the header preceding citeproc's empty refs div (inside
--- the header paragraph, so the break leaves no blank line).
+-- the header paragraph, so the break leaves no blank line), and every
+-- appendix after the refs div opens its level-1 heading with the same
+-- break run, a label line ("Appendix", lettered when the paper has
+-- more than one), and a line break before the title. Appendix
+-- headings sit at the top level or open a highlight region, so the
+-- zone is walked in order and level-1 headings are collected
+-- wherever they appear.
 
 local CAPMARK = "caption-mark"
 
@@ -170,6 +176,30 @@ function Figure(el)
   return nil
 end
 
+local function collect_appendix_heads(blocks, first, out)
+  for i = first, #blocks do
+    local b = blocks[i]
+    if b.t == "Header" and b.level == 1 then
+      out[#out + 1] = b
+    elseif b.t == "Div" then
+      collect_appendix_heads(b.content, 1, out)
+    end
+  end
+end
+
+local function label_appendices(doc, from)
+  local heads = {}
+  collect_appendix_heads(doc.blocks, from, heads)
+  for n, head in ipairs(heads) do
+    local label = "Appendix"
+    if #heads > 1 then label = label .. " " .. string.char(64 + n) end
+    head.content:insert(1, pandoc.RawInline("openxml",
+      '<w:r><w:br w:type="page" /></w:r>'))
+    head.content:insert(2, pandoc.Str(label))
+    head.content:insert(3, pandoc.LineBreak())
+  end
+end
+
 function Pandoc(doc)
   for i, b in ipairs(doc.blocks) do
     if b.t == "Div" and b.identifier == "refs" then
@@ -181,6 +211,7 @@ function Pandoc(doc)
         doc.blocks:insert(i, pandoc.RawBlock("openxml",
           '<w:p><w:r><w:br w:type="page" /></w:r></w:p>'))
       end
+      label_appendices(doc, i + 1)
       break
     end
   end
