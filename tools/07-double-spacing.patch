@@ -5,9 +5,12 @@
 # cluster (Caption, TableCaption, Figure) loses its before/after
 # spacing: APA adds no extra gap around headings, captions, or
 # floats, and the values stacked with heading spacing and the
-# two-paragraph caption split into inflated margins. Compact (table
-# cells, tight lists) pins single spacing: doubled cells inflate
-# tables beyond readability.
+# two-paragraph caption split into inflated margins. Word attaches a
+# paragraph's line lead below its text, so a caption before a table
+# already shows a full lead; the cluster stays at zero and the gap is
+# exactly one double-spaced lead. Compact (table cells, tight lists)
+# pins single spacing: doubled cells inflate tables beyond
+# readability.
 --- a/word/styles.xml
 +++ b/word/styles.xml
 @@ -11,7 +11,7 @@
