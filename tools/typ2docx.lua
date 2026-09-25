@@ -15,7 +15,11 @@
 -- region trims them from its edges. A figure wrapping
 -- only a table flattens to the table (caption position and numbering).
 -- Tables stay inside their mark region to the writer, which pens every
--- run in them as it does for text and math. APA: the references
+-- run in them as it does for text and math. A note paragraph (italic
+-- "Note." opening a paragraph that follows a table or image) is a
+-- float annotation, not a paragraph start: the filter wraps it in a
+-- no-indent div and the writer drops its first-line indent. APA: the
+-- references
 -- section starts on a new page, so a raw page-break run goes at the
 -- start of the header preceding citeproc's empty refs div (inside
 -- the header paragraph, so the break leaves no blank line), and every
@@ -169,6 +173,38 @@ function Figure(el)
   return nil
 end
 
+-- A float's note paragraph opens with an italicized "Note." and hangs
+-- off the table or image above it, wherever that float ended up
+-- (alone or closing a highlight region).
+local function is_note_para(b)
+  if b.t ~= "Para" then return false end
+  local first = b.content[1]
+  if first == nil or first.t ~= "Emph" then return false end
+  local s = first.content[1]
+  return s ~= nil and s.t == "Str" and s.text:match("^Note%.?$") ~= nil
+end
+
+local function ends_with_float(b)
+  if b.t == "Table" or b.t == "Figure" then return true end
+  if b.t == "Div" then
+    for i = #b.content, 1, -1 do
+      local c = b.content[i]
+      if not blank_para(c) then return ends_with_float(c) end
+    end
+  end
+  return false
+end
+
+local function mark_notes(blocks)
+  for i = 1, #blocks do
+    local b = blocks[i]
+    if b.t == "Div" then mark_notes(b.content) end
+    if i > 1 and is_note_para(b) and ends_with_float(blocks[i - 1]) then
+      blocks[i] = pandoc.Div({ b }, pandoc.Attr("", { "no-indent" }, {}))
+    end
+  end
+end
+
 local function collect_appendix_heads(blocks, first, out)
   for i = first, #blocks do
     local b = blocks[i]
@@ -194,6 +230,7 @@ local function label_appendices(doc, from)
 end
 
 function Pandoc(doc)
+  mark_notes(doc.blocks)
   for i, b in ipairs(doc.blocks) do
     if b.t == "Div" and b.identifier == "refs" then
       local prev = doc.blocks[i - 1]
