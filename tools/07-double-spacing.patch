@@ -2,15 +2,15 @@
 # default lives on docDefaults; BodyText and Title get explicit pins
 # because their own w:spacing would shadow the inherited line value.
 # FirstParagraph loses its 240 boundary spacing and the caption
-# cluster (Caption, TableCaption, Figure) loses its before/after
-# spacing: APA adds no extra gap around headings, captions, or
-# floats, and the values stacked with heading spacing and the
-# two-paragraph caption split into inflated margins. Word attaches a
-# paragraph's line lead below its text, so a caption before a table
-# already shows a full lead; the cluster stays at zero and the gap is
-# exactly one double-spaced lead. Compact (table cells, tight lists)
-# pins single spacing: doubled cells inflate tables beyond
-# readability.
+# cluster (Caption, TableCaption) loses its before/after spacing: APA
+# adds no extra gap around headings, captions, or floats, and the
+# values stacked with heading spacing and the two-paragraph caption
+# split into inflated margins. Word attaches a paragraph's line lead
+# below its text, so a caption before a table already shows a full
+# lead; the cluster stays at zero and the gap is exactly one
+# double-spaced lead. Compact (table cells, tight lists) and Figure
+# (an image rides a text line, and the doubled line box showed as a
+# giant gap below the image) pin single spacing.
 --- a/word/styles.xml
 +++ b/word/styles.xml
 @@ -11,7 +11,7 @@
@@ -81,7 +81,7 @@
      <w:basedOn w:val="Normal" />
      <w:pPr>
 -      <w:spacing w:before="240" />
-+      <w:spacing w:before="0" />
++      <w:spacing w:before="0" w:line="240" w:lineRule="auto" />
        <w:jc w:val="center" />
      </w:pPr>
    </w:style>
