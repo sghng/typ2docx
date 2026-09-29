@@ -26,7 +26,7 @@
      </w:pPr>
    </w:style>
    <w:style w:type="paragraph" w:styleId="Title">
-@@ -628,6 +633,7 @@
+@@ -627,6 +632,7 @@
      <w:basedOn w:val="Caption" />
      <w:pPr>
        <w:keepNext />
@@ -34,7 +34,7 @@
      </w:pPr>
    </w:style>
    <w:style w:type="paragraph" w:customStyle="1" w:styleId="ImageCaption">
-@@ -638,6 +644,7 @@
+@@ -637,6 +643,7 @@
      <w:name w:val="Figure" />
      <w:basedOn w:val="Normal" />
      <w:pPr>

@@ -20,7 +20,7 @@
 set -eu
 cd "$(dirname "$0")"
 ROOT="$(cd .. && pwd)"
-PANDOC_VERSION="3.11"
+PANDOC_VERSION="3.12"
 
 OUT=""
 MAX_PATCH=""
