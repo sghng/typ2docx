@@ -157,31 +157,50 @@ function Table(el)
   return nil
 end
 
-function Figure(el)
-  local in_region = el.attributes["in-region"] ~= nil
-  captioned(el, in_region)
-  if #el.content == 1 and el.content[1].t == "Table" then
-    local t = el.content[1]
-    if #(t.caption.long or {}) == 0 and #(el.caption.long or {}) > 0 then
-      t.caption = pandoc.Caption(el.caption.short, el.caption.long)
-    end
-    if t.identifier == "" then
-      t.identifier = el.identifier
-    end
-    return t
-  end
-  return nil
-end
-
 -- A float's note paragraph opens with an italicized "Note." and hangs
 -- off the table or image above it, wherever that float ended up
 -- (alone or closing a highlight region).
-local function is_note_para(b)
-  if b.t ~= "Para" then return false end
+local function is_note_para(b)  if b.t ~= "Para" then return false end
   local first = b.content[1]
   if first == nil or first.t ~= "Emph" then return false end
   local s = first.content[1]
   return s ~= nil and s.t == "Str" and s.text:match("^Note%.?$") ~= nil
+end
+
+function Figure(el)
+  local in_region = el.attributes["in-region"] ~= nil
+  captioned(el, in_region)
+  -- A figure whose body ends in a note para is a bundled float (the
+  -- source-side figure wrapper ties the note to its content): re-emit
+  -- one movable unit carrying [content, note], so the fixpoint moves
+  -- them together and the docx chain binds the note into the unit.
+  local note = nil
+  if #el.content > 1 and is_note_para(el.content[#el.content]) then
+    note = el.content[#el.content]
+    el.content:remove(#el.content)
+  end
+  local flattened = nil
+  if #el.content == 1 and el.content[1].t == "Table" then
+    local t = el.content[1]
+    if #(t.caption.long or {}) == 0 and #(el.caption.long or {}) > 0 then
+      -- pandoc.Caption(short, long) rejects a nil short; the one-arg
+      -- form sets long directly.
+      t.caption = pandoc.Caption(el.caption.long)
+    end
+    if t.identifier == "" then
+      t.identifier = el.identifier
+    end
+    if t.attributes["placement"] == nil
+        and el.attributes["placement"] ~= nil then
+      t.attributes["placement"] = el.attributes["placement"]
+    end
+    flattened = t
+  end
+  if note then
+    local unit = { flattened or el, note }
+    return pandoc.Div(unit, pandoc.Attr("", {}, { placement = "auto" }))
+  end
+  return flattened
 end
 
 local function ends_with_float(b)
@@ -229,7 +248,71 @@ local function label_appendices(doc, from)
   end
 end
 
+-- A floated block inside a highlight region is lifted into its own
+-- mark-wrapped unit at the same spot, so the fixpoint may move it
+-- (moving a bare float out of its region would silently strip the
+-- revision mark). The region splits into adjacent mark fragments,
+-- visually identical to one region since the pen is per-run; the
+-- region's identifier stays on the first emitted piece.
+local function lift_floats(blocks)
+  local out = pandoc.List()
+  for _, b in ipairs(blocks) do
+    if b.t == "Div" and b.classes:includes("mark") then
+      local buf = pandoc.List()
+      local first = true
+      local function piece_attr()
+        if first then
+          first = false
+          return b.attr
+        end
+        return pandoc.Attr("", { "mark" }, {})
+      end
+      local function flush()
+        while #buf > 0 and blank_para(buf[1]) do buf:remove(1) end
+        while #buf > 0 and blank_para(buf[#buf]) do buf:remove(#buf) end
+        if #buf > 0 then
+          out:insert(pandoc.Div(buf, piece_attr()))
+          buf = pandoc.List()
+        end
+      end
+      for _, c in ipairs(b.content) do
+        if c.attributes ~= nil and c.attributes["placement"] ~= nil then
+          flush()
+          local attr = piece_attr()
+          attr.attributes["placement"] = "auto"
+          out:insert(pandoc.Div({ c }, attr))
+        else
+          buf:insert(c)
+        end
+      end
+      flush()
+    else
+      out:insert(b)
+    end
+  end
+  return out
+end
+
 function Pandoc(doc)
+  -- House default: every table and figure floats (placement = auto) so
+  -- Word keeps it whole and near where it was written. Explicit source
+  -- decisions win: the reader carries placement: none through as an
+  -- opt-out and auto/top/bottom as intent.
+  doc = doc:walk({
+    Table = function(el)
+      if el.attributes["placement"] == nil then
+        el.attributes["placement"] = "auto"
+        return el
+      end
+    end,
+    Figure = function(el)
+      if el.attributes["placement"] == nil then
+        el.attributes["placement"] = "auto"
+        return el
+      end
+    end,
+  })
+  doc.blocks = lift_floats(doc.blocks)
   mark_notes(doc.blocks)
   for i, b in ipairs(doc.blocks) do
     if b.t == "Div" and b.identifier == "refs" then
