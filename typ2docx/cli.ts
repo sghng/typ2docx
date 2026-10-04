@@ -3,10 +3,11 @@
  * typ2docx/cli.ts -- the `abstract typ2docx` command.
  *
  * Converts a Typst source to Word beside it: house reference stock
- * rebuilt fresh from the patch series, citeproc, native numbering, the
- * content-adjustment filter (filter.lua), and the float placement
- * fixpoint (floats.ts) for blocks the Typst reader marked with a
- * placement keyval. No server or model involved.
+ * rebuilt fresh from the patch series, citeproc under the hash-pinned
+ * APA style, native numbering, the content-adjustment filter
+ * (filter.lua), and the float placement fixpoint (floats.ts) for
+ * blocks the Typst reader marked with a placement keyval. No server
+ * or model involved.
  *
  *   abstract typ2docx <file.typ> [--no-floats] [--max-passes N]
  *                                  [--keep-scratch]
@@ -14,12 +15,13 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chainDocx } from "./chain.ts";
@@ -27,6 +29,8 @@ import { placeFloats } from "./floats.ts";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const HARNESS_DIR = resolve(DIR, "..");
+const ABSTRACT_HOME =
+  process.env.ABSTRACT_HOME ?? join(homedir(), ".local", "share", "abstract");
 
 function fail(message: string): never {
   console.error(`abstract: ${message}`);
@@ -65,6 +69,54 @@ function buildReference(): string {
   return dir;
 }
 
+/** The APA citation style, hash-pinned. Pandoc's built-in style is
+ * Chicago author-date, but the drafts cite APA (their Typst PDFs
+ * render style: "apa"), so the conversion passes the canonical APA
+ * CSL explicitly. The file is fetched once from the styles repository
+ * into the abstract home and verified against the pin; a drifted
+ * upstream file fails the run rather than silently changing the
+ * citation format, and updating the pin is a reviewed decision. */
+const CSL_URL =
+  "https://raw.githubusercontent.com/citation-style-language/styles/master/apa.csl";
+const CSL_SHA256 =
+  "3917def5fc951b104d64216c3373096042368b9704ba269ca83c14ebaba889fc";
+const CSL_PATH = join(ABSTRACT_HOME, "csl", "apa.csl");
+
+async function ensureApaCsl(): Promise<string> {
+  if (existsSync(CSL_PATH)) {
+    const cached = readFileSync(CSL_PATH);
+    if (sha256hex(cached) === CSL_SHA256) return CSL_PATH;
+    console.error(
+      "typ2docx: cached apa.csl does not match the pin; refetching",
+    );
+  }
+  let body: Uint8Array;
+  try {
+    const r = await fetch(CSL_URL);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    body = new Uint8Array(await r.arrayBuffer());
+  } catch (e) {
+    fail(
+      `cannot fetch the APA citation style (${CSL_URL}): ` +
+        (e instanceof Error ? e.message : e),
+    );
+  }
+  if (sha256hex(body) !== CSL_SHA256)
+    fail(
+      "apa.csl at " +
+        CSL_URL +
+        " does not match the pinned hash; " +
+        "review it and update CSL_SHA256 in typ2docx/cli.ts",
+    );
+  mkdirSync(dirname(CSL_PATH), { recursive: true });
+  writeFileSync(CSL_PATH, body);
+  return CSL_PATH;
+}
+
+function sha256hex(data: Uint8Array): string {
+  return new Bun.CryptoHasher("sha256").update(data).digest("hex");
+}
+
 /** Convert a Typst source to Word beside it. Pandoc runs from the
  *  source's directory so relative bibliography and asset paths in the
  *  .typ resolve as they do when drafting there. */
@@ -81,6 +133,7 @@ export async function typeToDocx(args: string[]): Promise<void> {
 
   const cwd = dirname(src);
   const out = src.slice(0, -4) + ".docx";
+  const csl = await ensureApaCsl();
   const stockDir = buildReference();
   const scratch = mkdtempSync(join(tmpdir(), "typ2docx-floats-"));
   const log = (msg: string) => console.error(`typ2docx: ${msg}`);
@@ -98,6 +151,8 @@ export async function typeToDocx(args: string[]): Promise<void> {
         "-t",
         "json",
         "--citeproc",
+        "--csl",
+        csl,
         "--lua-filter",
         join(DIR, "filter.lua"),
         "-o",

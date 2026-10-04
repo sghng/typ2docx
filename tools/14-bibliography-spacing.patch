@@ -1,0 +1,22 @@
+# Typ2docx bibliography spacing: entries sit exactly one double-spaced
+# lead apart, like body paragraphs after 12-body-paragraph-spacing.
+# The pristine stock leaves Bibliography with an empty pPr, so entries
+# inherit docDefaults (double line plus after=200) and the gap between
+# references is a double lead with ten extra points on top. APA
+# reference lists are double-spaced with no extra paragraph gap; the
+# line pin is explicit because a style's own w:spacing shadows the
+# docDefaults line value. The hanging indent stays as the writer's
+# direct formatting on each entry.
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -188,7 +188,9 @@
+     <w:basedOn w:val="Normal" />
+     <w:next w:val="Bibliography" />
+     <w:qFormat />
+-    <w:pPr />
++    <w:pPr>
++      <w:spacing w:before="0" w:after="0" w:line="480" w:lineRule="auto" />
++    </w:pPr>
+     <w:rPr />
+   </w:style>
+   <w:style w:type="paragraph" w:styleId="Heading1">
