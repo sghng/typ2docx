@@ -34,12 +34,16 @@ function fail(message: string): never {
 }
 
 function run(cmd: string, args: string[], cwd?: string): void {
-  const r = spawnSync(cmd, args, { encoding: "utf8", cwd });
+  // stderr passes through: the filter's guardrail messages (an
+  // added-refs key with no entry, a malformed declaration) must reach
+  // the user even on success
+  const r = spawnSync(cmd, args, {
+    encoding: "utf8",
+    cwd,
+    stdio: ["ignore", "pipe", "inherit"],
+  });
   if (r.error) fail(`${cmd} not runnable: ${r.error.message}`);
-  if (r.status !== 0) {
-    process.stderr.write(r.stderr ?? "");
-    process.exit(r.status ?? 1);
-  }
+  if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
 /** Build the house reference stock into a private temp dir and return the

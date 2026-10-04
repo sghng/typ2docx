@@ -6,7 +6,13 @@
 -- paragraph's, heading's and cell's inline content, for the docx
 -- writer's pen, which covers every run inside a mark span, text and
 -- OMML math alike, and labels marked captions inside the mark span,
--- so their "Table 9:" supplements take the pen too. The filter's whole
+-- so their "Table 9:" supplements take the pen too. Reference entries
+-- the draft declares as added in the revision (cite keys under the
+-- added-refs metadata key, set by the reader's #metadata handler from
+-- #metadata((<key>, ..)) in the source) take
+-- the same pen: citeproc fills the refs div with entries identified
+-- ref-<key>, so the keys mark their entries in place, one References
+-- list with sparing highlights. The filter's whole
 -- caption treatment is one pen span per marked caption (the
 -- caption-mark attribute keeps the paragraph handlers off them): the
 -- writer forces caption paragraph styles and builds the supplements
@@ -227,6 +233,49 @@ local function mark_notes(blocks)
   end
 end
 
+-- References added in a revision, highlighted in place. The draft
+-- declares their cite keys under the added-refs metadata key (set by
+-- the typst reader's #metadata handler from a label list in the
+-- source, #metadata((<key>, ..)) <added-refs>: labels are names, so
+-- the value is a plain key list, apart from the citation machinery);
+-- citeproc has already filled the refs div with entries whose
+-- identifiers are ref-<key>, so the keys mark their entries and the
+-- final pen pass highlights them.
+local function collect_added_keys(v, keys)
+  if type(v) == "string" then
+    keys[v] = true
+  elseif type(v) == "table" and v.t == nil then
+    for _, x in ipairs(v) do collect_added_keys(x, keys) end
+  end
+end
+
+local function mark_added_refs(doc)
+  local v = doc.meta["added-refs"]
+  if v == nil then return end
+  local keys = {}
+  collect_added_keys(v, keys)
+  if next(keys) == nil then
+    io.stderr:write(
+      "typ2docx: added-refs must be cite keys, as in #metadata((<key>, ..)) <added-refs>\n")
+    return
+  end
+  for _, b in ipairs(doc.blocks) do
+    if b.t == "Div" and b.identifier == "refs" then
+      for _, e in ipairs(b.content) do
+        local id = e.t == "Div" and e.identifier or ""
+        if id:sub(1, 4) == "ref-" and keys[id:sub(5)] then
+          marked(e)
+          keys[id:sub(5)] = nil
+        end
+      end
+    end
+  end
+  for k in pairs(keys) do
+    io.stderr:write(
+      string.format("typ2docx: added-refs key %s has no reference entry\n", k))
+  end
+end
+
 local function collect_appendix_heads(blocks, first, out)
   for i = first, #blocks do
     local b = blocks[i]
@@ -385,6 +434,7 @@ function Pandoc(doc)
   })
   doc.blocks = lift_floats(doc.blocks)
   mark_notes(doc.blocks)
+  mark_added_refs(doc)
   pen_blocks(doc.blocks)
   for i, b in ipairs(doc.blocks) do
     if b.t == "Div" and b.identifier == "refs" then
