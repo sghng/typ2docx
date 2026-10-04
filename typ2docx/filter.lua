@@ -1,21 +1,24 @@
 -- Typ2docx content adjustments. The Typst reader captures highlight
 -- regions as mark divs/spans covering their whole body (multi-paragraph
 -- and math-bearing bodies included) and block/box fills as
--- background-color attributes; the filter normalizes fills to marks and
--- leaves all highlighting to the docx writer's native pen, which covers
--- every run inside a mark, text and OMML math alike, and labels marked
--- captions inside the mark span, so their "Table 9:" supplements take
--- the pen too. The filter's whole caption treatment is one pen span per
--- marked caption (the caption-mark attribute keeps the paragraph
--- handlers off them): the writer forces caption paragraph styles and
--- builds the supplements itself, beyond the filter's reach. The reader
+-- background-color attributes; the filter normalizes fills to marks
+-- and dissolves each marked region into mark spans, one around every
+-- paragraph's, heading's and cell's inline content, for the docx
+-- writer's pen, which covers every run inside a mark span, text and
+-- OMML math alike, and labels marked captions inside the mark span,
+-- so their "Table 9:" supplements take the pen too. The filter's whole
+-- caption treatment is one pen span per marked caption (the
+-- caption-mark attribute keeps the paragraph handlers off them): the
+-- writer forces caption paragraph styles and builds the supplements
+-- itself, beyond the filter's reach. The reader
 -- also emits whitespace-only paragraphs for comment lines and bracket
 -- newlines, and anchor-only paragraphs for labels; Typst source never
 -- carries an intentional empty paragraph, so they are dropped, and a
 -- region trims them from its edges. A figure wrapping
 -- only a table flattens to the table (caption position and numbering).
--- Tables stay inside their mark region to the writer, which pens every
--- run in them as it does for text and math. A note paragraph (italic
+-- Tables stay inside their mark region to the final pen pass, which
+-- spans every run in their cells as it does for text and math. A note
+-- paragraph (italic
 -- "Note." opening a paragraph that follows a table or image) is a
 -- float annotation, not a paragraph start: the filter wraps it in a
 -- no-indent div and the writer drops its first-line indent. APA: the
@@ -293,6 +296,74 @@ local function lift_floats(blocks)
   return out
 end
 
+-- The final pen pass. The docx writer pens mark spans, not mark divs
+-- (a span's pen covers every run inside it, text and OMML math alike,
+-- which is also how markdown's <mark> and the reader's inline
+-- highlights are rendered), so every marked region dissolves into
+-- per-paragraph mark spans: paragraphs, headings, note divs, list
+-- items, figure bodies and table cells each get one span around their
+-- inline content. Captions keep the pen span the caption pass already
+-- made, and floats keep the mark fragments the fixpoint lifted them
+-- into; only the runs change hands, not the structure.
+local pen_blocks
+
+local function penned(b)
+  if b.t ~= "Para" and b.t ~= "Plain" then return false end
+  local only = b.content[1]
+  return #b.content == 1 and only ~= nil and only.t == "Span"
+    and only.classes:includes("mark")
+end
+
+local function pen_inlines(ils)
+  if #ils == 0 then return ils end
+  return pandoc.List({ pandoc.Span(ils, pandoc.Attr("", { "mark" }, {})) })
+end
+
+local function pen_rows(rows)
+  for _, row in ipairs(rows or {}) do
+    for _, cell in ipairs(row.cells or {}) do
+      pen_blocks(cell.content, true)
+    end
+  end
+end
+
+local function pen_block(b, inside)
+  if b.t == "Para" or b.t == "Plain" then
+    if inside and not penned(b) then b.content = pen_inlines(b.content) end
+  elseif b.t == "Header" then
+    if inside then b.content = pen_inlines(b.content) end
+  elseif b.t == "LineBlock" then
+    if inside then
+      for j, line in ipairs(b.content) do b.content[j] = pen_inlines(line) end
+    end
+  elseif b.t == "Table" then
+    if inside then
+      pen_rows(b.head and b.head.rows)
+      for _, body in ipairs(b.bodies or {}) do
+        pen_rows(body.head)
+        pen_rows(body.body)
+      end
+      pen_rows(b.foot and b.foot.rows)
+      pen_blocks(b.caption.long or {}, true)
+    end
+  elseif b.t == "Figure" then
+    pen_blocks(b.content, inside)
+    if inside then pen_blocks(b.caption.long or {}, true) end
+  elseif b.t == "Div" then
+    pen_blocks(b.content, inside or b.classes:includes("mark"))
+  elseif b.t == "BlockQuote" then
+    pen_blocks(b.content, inside)
+  elseif b.t == "BulletList" or b.t == "OrderedList" then
+    for _, item in ipairs(b.content) do pen_blocks(item, inside) end
+  end
+  return b
+end
+
+pen_blocks = function(blocks, inside)
+  for i, b in ipairs(blocks) do blocks[i] = pen_block(b, inside) end
+  return blocks
+end
+
 function Pandoc(doc)
   -- House default: every table and figure floats (placement = auto) so
   -- Word keeps it whole and near where it was written. Explicit source
@@ -314,6 +385,7 @@ function Pandoc(doc)
   })
   doc.blocks = lift_floats(doc.blocks)
   mark_notes(doc.blocks)
+  pen_blocks(doc.blocks)
   for i, b in ipairs(doc.blocks) do
     if b.t == "Div" and b.identifier == "refs" then
       local prev = doc.blocks[i - 1]
