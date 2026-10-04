@@ -68,18 +68,28 @@ end
 
 -- Caption paragraphs take their style from the writer and their
 -- supplement runs exist only in its output, so the filter's whole caption
--- treatment is this pen span; the attribute keeps the paragraph handlers
--- from reworking caption paragraphs behind the writer's back.
-local function caption_pen(b)
+-- treatment is this pen span, in two shapes. A caption inside a marked
+-- region is changed content and takes a bare mark span: the writer pens
+-- every run in one, so the whole body and the supplement highlight
+-- together. Outside a region a caption is penned only where its own
+-- source carries marks, so the wrapper carries the caption-mark
+-- attribute, which the writer's pen deliberately does not match: the
+-- body keeps to its inner marks while the label, which reads the mark
+-- class, still takes the pen. The attribute also keeps the paragraph
+-- handlers from reworking caption paragraphs behind the writer's back.
+local function caption_pen(b, in_region)
   local only = b.content[1]
   if #b.content == 1 and only.t == "Span"
-      and only.attributes[CAPMARK] ~= nil then
+      and only.classes:includes("mark") then
     return b
   end
-  b.content = pandoc.List(
-    { pandoc.Span(b.content,
-      pandoc.Attr("", { "mark" }, { [CAPMARK] = "" })) }
-  )
+  local attr
+  if in_region then
+    attr = pandoc.Attr("", { "mark" }, {})
+  else
+    attr = pandoc.Attr("", { "mark" }, { [CAPMARK] = "" })
+  end
+  b.content = pandoc.List({ pandoc.Span(b.content, attr) })
   return b
 end
 
@@ -108,7 +118,9 @@ local function captioned(el, in_region)
   local blocks = el.caption.long
   if not blocks then return el end
   for i, b in ipairs(blocks) do
-    if in_region or block_marked(b) then blocks[i] = caption_pen(b) end
+    if in_region or block_marked(b) then
+      blocks[i] = caption_pen(b, in_region)
+    end
   end
   return el
 end
@@ -353,7 +365,12 @@ end
 -- items, figure bodies and table cells each get one span around their
 -- inline content. Captions keep the pen span the caption pass already
 -- made, and floats keep the mark fragments the fixpoint lifted them
--- into; only the runs change hands, not the structure.
+-- into; only the runs change hands, not the structure. Code has no
+-- inlines to wrap, so a marked code block re-voices itself through the
+-- two contracts that do reach its runs: the writer renders a Code
+-- inline exactly as it renders a code block (one paragraph, lines
+-- split into runs), and a custom-style div stamps the paragraph with
+-- the Source Code style the block itself would have taken.
 local pen_blocks
 
 local function penned(b)
@@ -384,6 +401,15 @@ local function pen_block(b, inside)
   elseif b.t == "LineBlock" then
     if inside then
       for j, line in ipairs(b.content) do b.content[j] = pen_inlines(line) end
+    end
+  elseif b.t == "CodeBlock" then
+    if inside then
+      local attr = pandoc.Attr(b.identifier, b.classes, b.attributes)
+      local code = pandoc.Code(b.text, attr)
+      local span = pandoc.Span(pandoc.List({ code }),
+        pandoc.Attr("", { "mark" }, {}))
+      return pandoc.Div(pandoc.List({ pandoc.Para(pandoc.List({ span })) }),
+        pandoc.Attr("", {}, { ["custom-style"] = "Source Code" }))
     end
   elseif b.t == "Table" then
     if inside then
