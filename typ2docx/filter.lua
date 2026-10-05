@@ -439,11 +439,172 @@ pen_blocks = function(blocks, inside)
   return blocks
 end
 
+-- Typst breaks a paragraph at display math: the equation centers on
+-- its own line and the text resumes after it as a run-in continuation
+-- of one source paragraph. Word lays an oMathPara out as display only
+-- when its w:p holds no other run. The docx writer already chops a
+-- paragraph whose display math sits at its top level (fixDisplayMath,
+-- upstream preprocessing, which also strips boundary blanks and marks
+-- the continuation pieces), but a revision mark hides the equation
+-- from that walk: single-paragraph regions arrive with the equation
+-- inside a mark span, and multi-paragraph regions dissolve into mark
+-- divs whose paragraphs the pen pass later wraps in spans, so in both
+-- shapes the equation ends up behind a span the walk cannot see
+-- through, embedded with the surrounding text and the space before
+-- its label. This chop covers those paths only: display math inside a
+-- mark span, or at the top level of a paragraph inside a marked
+-- region, is lifted out as its own paragraph (the mark span around it
+-- emits no run of its own), boundary blanks drop away, the label
+-- anchor (an empty span, emitting no run) rides along, and every text
+-- piece after the first equation wraps in a math-continuation div,
+-- the same contract the writer's chopper uses, so the first-line
+-- indent stays suppressed. Each piece is re-wrapped in its own mark
+-- span; the pen is per-run, so per-piece spans read as one region.
+local function is_display_math(inl)
+  return inl.t == "Math" and inl.mathtype == "DisplayMath"
+end
+
+local function is_anchor(inl)
+  return inl.t == "Span" and #inl.content == 0
+end
+
+local function has_display_math(ils)
+  for _, inl in ipairs(ils) do
+    if is_display_math(inl) then return true end
+    if inl.t == "Span" and has_display_math(inl.content) then
+      return true
+    end
+  end
+  return false
+end
+
+local function carries_hidden_math(ils)
+  for _, inl in ipairs(ils) do
+    if inl.t == "Span" and inl.classes:includes("mark")
+        and has_display_math(inl.content) then
+      return true
+    end
+  end
+  return false
+end
+
+local function chop_inlines_at(ils, choppable, segs)
+  local buf = pandoc.List()
+  local function flush()
+    trim_blank(buf)
+    if #buf > 0 then
+      segs:insert({ text = true, marked = choppable, ils = buf })
+      buf = pandoc.List()
+    end
+  end
+  local i = 1
+  while i <= #ils do
+    local inl = ils[i]
+    if choppable and is_display_math(inl) then
+      flush()
+      local m = pandoc.List({ inl })
+      local j = i + 1
+      while j <= #ils and (blank(ils[j]) or is_anchor(ils[j])) do
+        if is_anchor(ils[j]) then m:insert(ils[j]) end
+        j = j + 1
+      end
+      segs:insert({ text = false, marked = true, ils = m })
+      i = j
+    elseif inl.t == "Span" and inl.classes:includes("mark")
+        and has_display_math(inl.content) then
+      chop_inlines_at(inl.content, true, segs)
+      i = i + 1
+    else
+      buf:insert(inl)
+      i = i + 1
+    end
+  end
+  flush()
+end
+
+local function seg_content(seg)
+  if not seg.marked then return seg.ils end
+  return pandoc.List(
+    { pandoc.Span(seg.ils, pandoc.Attr("", { "mark" }, {})) })
+end
+
+local function chop_block(b, in_region)
+  if b.t ~= "Para" and b.t ~= "Plain" then return nil end
+  -- Only paragraphs that actually carry display math are chopped, and
+  -- only where the writer's own walk cannot lift it: anywhere inside a
+  -- marked region, or inside a mark span anywhere. Plain paragraphs
+  -- keep their block type to the writer otherwise (table cells ride on
+  -- Plain), and unmarked top-level math is left for the writer's
+  -- fixDisplayMath.
+  if in_region then
+    if not has_display_math(b.content) then return nil end
+  elseif not carries_hidden_math(b.content) then
+    return nil
+  end
+  local segs = pandoc.List()
+  chop_inlines_at(b.content, in_region, segs)
+  local out = pandoc.List()
+  local after_math = false
+  for _, seg in ipairs(segs) do
+    if seg.text then
+      local para = pandoc.Para(seg_content(seg))
+      if after_math then
+        out:insert(pandoc.Div({ para },
+          pandoc.Attr("", { "math-continuation" }, {})))
+      else
+        out:insert(para)
+      end
+    else
+      out:insert(pandoc.Para(seg_content(seg)))
+      after_math = true
+    end
+  end
+  return out
+end
+
+local fix_display_math
+
+local function fix_rows(rows, in_region)
+  for _, row in ipairs(rows or {}) do
+    for _, cell in ipairs(row.cells or {}) do
+      cell.content = fix_display_math(cell.content, in_region)
+    end
+  end
+end
+
+local function fix_one(b, in_region)
+  local chopped = chop_block(b, in_region)
+  if chopped then return chopped end
+  if b.t == "Div" or b.t == "BlockQuote" then
+    b.content = fix_display_math(b.content,
+      in_region or b.classes:includes("mark"))
+  elseif b.t == "BulletList" or b.t == "OrderedList" then
+    for i, item in ipairs(b.content) do
+      b.content[i] = fix_display_math(item, in_region)
+    end
+  elseif b.t == "Table" then
+    fix_rows(b.head and b.head.rows, in_region)
+    for _, body in ipairs(b.bodies or {}) do
+      fix_rows(body.head, in_region)
+      fix_rows(body.body, in_region)
+    end
+    fix_rows(b.foot and b.foot.rows, in_region)
+  end
+  return { b }
+end
+
+fix_display_math = function(blocks, in_region)
+  local out = pandoc.List()
+  for _, b in ipairs(blocks) do out:extend(fix_one(b, in_region)) end
+  return out
+end
+
 function Pandoc(doc)
   -- House default: every table and figure floats (placement = auto) so
   -- Word keeps it whole and near where it was written. Explicit source
   -- decisions win: the reader carries placement: none through as an
   -- opt-out and auto/top/bottom as intent.
+  doc.blocks = fix_display_math(doc.blocks)
   doc = doc:walk({
     Table = function(el)
       if el.attributes["placement"] == nil then
