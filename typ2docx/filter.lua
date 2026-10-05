@@ -512,6 +512,7 @@ local function chop_inlines_at(ils, choppable, segs)
       i = j
     elseif inl.t == "Span" and inl.classes:includes("mark")
         and has_display_math(inl.content) then
+      flush()
       chop_inlines_at(inl.content, true, segs)
       i = i + 1
     else
