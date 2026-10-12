@@ -15,7 +15,7 @@
 # private temp dir on every conversion (--out below), so the patch series
 # is the single source of truth. A manual invocation writes
 # reference/reference.docx (uncommitted). --max-patch N applies only the
-# first N patches and writes reference/reference.debug.docx; 0 means the
+# first N patches and writes tools/reference.debug.docx; 0 means the
 # pristine export untouched, for examining pandoc's defaults.
 set -eu
 cd "$(dirname "$0")"
@@ -96,7 +96,7 @@ for p in [0-9][0-9]-*.patch; do
 done
 
 if [ -n "$MAX_PATCH" ]; then
-  DEST="$ROOT/reference/reference.debug.docx"
+  DEST="$ROOT/tools/reference.debug.docx"
   NOTE=" ($APPLIED of $TOTAL patches)"
 elif [ -n "$OUT" ]; then
   DEST="$OUT"
