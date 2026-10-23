@@ -20,7 +20,6 @@
 set -eu
 cd "$(dirname "$0")"
 ROOT="$(cd .. && pwd)"
-PANDOC_VERSION="3.12"
 
 OUT=""
 MAX_PATCH=""
@@ -50,15 +49,6 @@ if [ -n "$MAX_PATCH" ]; then
       ;;
   esac
 fi
-
-case "$(pandoc --version | head -1)" in
-  "pandoc $PANDOC_VERSION") ;;
-  *)
-    echo "pandoc $PANDOC_VERSION required (the pristine base and the patch
-contexts are generated against it); refusing to build" >&2
-    exit 1
-    ;;
-esac
 
 for p in *.patch; do
   case "$p" in

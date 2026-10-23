@@ -198,3 +198,5 @@ export async function typeToDocx(args: string[]): Promise<void> {
     else rmSync(scratch, { recursive: true, force: true });
   }
 }
+
+if (import.meta.main) await typeToDocx(process.argv.slice(2));

@@ -15,9 +15,10 @@ keep-together chain); `tools/` holds the reference stock concern.
   through filters would lose inheritance, docDefaults, and theme fonts.
   The filter maps semantics; the stock owns appearance.
 - The numbered patch series in `tools/` is the single source of truth for
-  the stock. The build exports pandoc's pristine reference docx, applies
-  the `NN-*.patch` series in order with `--fuzz=0` against a pinned pandoc
-  version, and repacks. Any drift fails at the offending patch. `--max-patch
+  the stock. The build exports pandoc's pristine reference docx with
+  whatever `pandoc` is on `PATH`, applies the `NN-*.patch` series in order
+  with `--fuzz=0`, and repacks. A pandoc whose template drifted from the
+  one the patches were cut against fails at the offending patch. `--max-patch
   N` bisects (0 is the pristine export; partial builds write
   `reference/reference.debug.docx`). Every conversion rebuilds a fresh
   stock into a private temp dir (~100 ms warm), so there is no committed
