@@ -1,0 +1,4 @@
+[submodule "pandoc"]
+	path = pandoc
+	url = git@github.com:sghng/pandoc.git
+	branch = main
