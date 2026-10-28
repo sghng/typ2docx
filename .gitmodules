@@ -2,3 +2,7 @@
 	path = pandoc
 	url = git@github.com:sghng/pandoc.git
 	branch = main
+[submodule "typst-hs"]
+	path = typst-hs
+	url = git@github.com:sghng/typst-hs.git
+	branch = fix-ref-shorthand
