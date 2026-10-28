@@ -108,22 +108,27 @@ function chainTable(tbl: string, lastRowChains: boolean): string {
 export function chainDocumentXml(xml: string): string {
   // Patch every table, innermost first so nested spans stay valid; note
   // attachment for the last row is decided from what follows the table.
+  // Spans nest (a table can sit in another's cell), so an inner edit
+  // shifts every enclosing span's end; `applied` carries those deltas.
   const spans = tableSpans(xml);
-  const replacements: [number, number, string][] = [];
-  for (const [start, end] of spans) {
+  const applied: { start: number; end: number; delta: number }[] = [];
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const [start, origEnd] = spans[i];
+    const shift = applied
+      .filter((a) => a.start > start && a.end <= origEnd)
+      .reduce((n, a) => n + a.delta, 0);
+    const end = origEnd + shift;
     const tbl = xml.slice(start, end);
     const rest = xml.slice(end).match(/^\s*(<w:p>.*?<\/w:p>|<w:p\/>)/s);
     const lastRowChains = rest !== null && isNotePara(rest[1]);
-    replacements.push([start, end, chainTable(tbl, lastRowChains)]);
+    const patched = chainTable(tbl, lastRowChains);
+    xml = xml.slice(0, start) + patched + xml.slice(end);
+    applied.push({
+      start,
+      end: origEnd,
+      delta: patched.length - (origEnd - start),
+    });
   }
-  let out = "";
-  let cursor = 0;
-  for (const [start, end, text] of replacements) {
-    out += xml.slice(cursor, start) + text;
-    cursor = end;
-  }
-  out += xml.slice(cursor);
-  xml = out;
 
   // Paragraph-level passes, applied piecewise to avoid cross-paragraph
   // regex greed: captions chain down, and an image paragraph followed by

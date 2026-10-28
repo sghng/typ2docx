@@ -96,11 +96,11 @@ they do not replace manual review in Word when rendering differences matter.
 ## Toolchain
 
 - `pandoc/` is a submodule tracking the custom pandoc fork's `main` branch.
-- `tools/build-typst.sh` builds Typst and Hayagriva at pinned, mutually
+- `build-typst.sh` builds Typst and Hayagriva at pinned, mutually
   compatible upstream commits. Their sources and all build artifacts stay in
   the ignored `.build/` directory, so no forks or additional submodules are
   required.
-- `tools/build-reference.sh` rebuilds the APA reference stock from its patch
+- `build-reference.sh` rebuilds the APA reference stock from its patch
   series.
 
 The Typst build requires git, Cargo with Rust 1.92 or newer, and network
@@ -110,16 +110,110 @@ Initialize the pandoc submodule and build Typst:
 
 ```sh
 git submodule update --init --recursive
-tools/build-typst.sh
+build-typst.sh
 ```
 
 The script produces `.build/bin/typst`. Use this binary for converter steps
 that need the pinned Typst and Hayagriva toolchain.
 
+## Build and install
+
+`just build` compiles the pinned Typst and pandoc toolchains into
+`.build/bin`. `just install` performs the same build and installs only the
+`typ2docx` command under `~/.local/bin`. Pandoc and Typst remain repo-local.
+
+```sh
+just install
+```
+
+Ensure `~/.local/bin` is on your `PATH`, then run `typ2docx <file.typ>`.
+
 ## Convert
 
 ```sh
-bun typ2docx/cli.ts <file.typ>
+bun cli.ts <file.typ>
 ```
 
 The command writes a DOCX beside the source file.
+
+## House policy
+
+- Every table and figure floats, by house policy. Real manuscripts never
+  write placement, so the filter stamps `placement = auto` on all of them.
+- The Typst source carries content only. Word style lives in the reference
+  stock, never in the source and never in the filter. The filter maps
+  semantics; the stock owns appearance.
+- The numbered patch series in `patches/` is the single source of truth for
+  the stock. The build exports pandoc's pristine reference docx with the
+  repo-local binary, applies the `NN-*.patch` series in order with `--fuzz=0`,
+  and repacks. Template drift fails at the offending patch. `--max-patch N`
+  bisects the series, and every conversion rebuilds a fresh stock into a
+  private temp dir so there is no committed stock or dual-source drift.
+
+## Division of labor
+
+- `filter.lua` normalizes captured block and box fills and `highlight` mark
+  regions onto pandoc's native mark handling and the default text highlight
+  pen. Every pen span the filter mints is bare so the writer's pen matcher
+  sees it. Marked code becomes a Code inline under a Source Code
+  custom-style div.
+- `floats.ts` renders token-injected AST copies through LibreOffice and moves
+  whole nodes until each float lands unsplit within one page of its authored
+  position. A marked region ending in a table hoists it out, and nested
+  floats move only with their highlight region.
+- `chain.ts` performs XML surgery on the pandoc-produced DOCX: `cantSplit`
+  rows, `keepNext` chains, and caption riding. The keep-together recipe lives
+  here because it is house policy, not a writer default.
+
+## Anchors and equation numbers
+
+Typst owns reference and display numbering. The CLI evaluates `anchors.typ`
+through the repo-local `typst eval --in` and passes the resulting map to the
+filter through `TYP2DOCX_ANCHORS`. Heading and equation sequences are checked
+against the AST before use; a mismatch warns and leaves numbering unchanged.
+
+The filter replaces only automatic reference placeholders of the form
+`[label]`. Explicit supplements and citations stay untouched, and links keep
+their targets. Numbered headings take their displayed ordinal from the map,
+except appendix headings, which keep the house label treatment.
+
+A numbered display equation stays OMML and moves into a borderless
+three-column layout table with a blank left cell, the equation in the center,
+and its number at the right. The `Equation` stock style removes inherited
+rules, cell margins, and the default table indent. These tables have no
+placement attribute and empty captions, so they neither float nor consume
+Table sequence numbers. The equation label moves onto the visible number,
+which gives internal links a real bookmark target.
+
+## Measurement discipline
+
+- No render may contain an object the delivered DOCX lacks. Measurement uses
+  inline token runs in per-pass render copies only. Sentinel paragraphs are
+  forbidden because they change keepNext page-break arithmetic.
+- The float's end token rides inside the float itself; a marker at a page top
+  no longer counts as spill or over-tall. Swap cycles are cut by full
+  block-order signatures, and the cheapest measured layout is kept.
+- `pdftotext -bbox` output goes to a file because a full manuscript overflows
+  the subprocess stdout buffer.
+
+## Word versus LibreOffice
+
+Render checks through LibreOffice do not guarantee the same result in Word.
+Word lays an oMathPara out as display only when its paragraph holds no other
+run, so the filter chops marked equations into their own span-wrapped
+paragraphs. Word also handles table-adjacent spacing differently, which is
+why caption and post-table spacing live in the stock and writer boundary
+marks rather than line spacing. When a defect is Word-side, inspect the probe
+document in Word before accepting a fix.
+
+## Upstream dependencies
+
+Anchor evaluation uses `.build/bin/typst`, built from the pinned compatible
+Typst and Hayagriva revisions. Pandoc uses `.build/bin/pandoc`, built from the
+submodule. Neither tool is selected through `PATH`, so a system installation
+cannot silently mask a stale or incompatible local build.
+
+Citation style is APA through a hash-pinned CSL, with native numbering and
+tight bibliography spacing. Appendix headings get page breaks, a label line
+lettered only when there is more than one appendix, and a line break before
+the title. The references section starts on a new page.

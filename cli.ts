@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 /**
- * typ2docx/cli.ts -- the `abstract typ2docx` command.
+ * cli.ts -- the `abstract typ2docx` command.
  *
  * Converts a Typst source to Word beside it: house reference stock
  * rebuilt fresh from the patch series, citeproc under the hash-pinned
- * APA style, native numbering, the content-adjustment filter
+ * APA style, native numbering, Typst counters from anchors.typ for
+ * references and displayed numbers, the content-adjustment filter
  * (filter.lua), and the float placement fixpoint (floats.ts) for
  * blocks the Typst reader marked with a placement keyval. No server
  * or model involved.
@@ -28,7 +29,8 @@ import { chainDocx } from "./chain.ts";
 import { placeFloats } from "./floats.ts";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
-const HARNESS_DIR = resolve(DIR, "..");
+const HARNESS_DIR = DIR;
+const PANDOC = join(HARNESS_DIR, ".build", "bin", "pandoc");
 const ABSTRACT_HOME =
   process.env.ABSTRACT_HOME ?? join(homedir(), ".local", "share", "abstract");
 
@@ -37,13 +39,19 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-function run(cmd: string, args: string[], cwd?: string): void {
+function run(
+  cmd: string,
+  args: string[],
+  cwd?: string,
+  env?: NodeJS.ProcessEnv,
+): void {
   // stderr passes through: the filter's guardrail messages (an
   // added-refs key with no entry, a malformed declaration) must reach
   // the user even on success
   const r = spawnSync(cmd, args, {
     encoding: "utf8",
     cwd,
+    env,
     stdio: ["ignore", "pipe", "inherit"],
   });
   if (r.error) fail(`${cmd} not runnable: ${r.error.message}`);
@@ -55,7 +63,7 @@ function run(cmd: string, args: string[], cwd?: string): void {
  *  source of truth and nothing is cached. Quiet on success; the build
  *  log only surfaces when the build fails. */
 function buildReference(): string {
-  const script = join(HARNESS_DIR, "tools", "build-reference.sh");
+  const script = join(HARNESS_DIR, "build-reference.sh");
   const dir = mkdtempSync(join(tmpdir(), "typ2docx-"));
   const r = spawnSync(script, ["--out", join(dir, "reference.docx")], {
     encoding: "utf8",
@@ -67,6 +75,42 @@ function buildReference(): string {
     process.exit(r.status ?? 1);
   }
   return dir;
+}
+
+/** Build the pinned Typst and Hayagriva toolchain and return its binary. */
+function buildTypst(): string {
+  const script = join(HARNESS_DIR, "build-typst.sh");
+  const r = spawnSync(script, [], { encoding: "utf8" });
+  if (r.error) fail(`build script not runnable: ${script}`);
+  if (r.status !== 0) {
+    process.stdout.write(r.stdout ?? "");
+    process.stderr.write(r.stderr ?? "");
+    process.exit(r.status ?? 1);
+  }
+  return join(HARNESS_DIR, ".build", "bin", "typst");
+}
+
+/** Evaluate Typst's counters into the anchor map consumed by filter.lua.
+ *  The map lives in scratch and reaches the filter through the environment;
+ *  the final render never needs it. Typst owns numbering semantics, so Word
+ *  references and displayed equation numbers match the Typst PDF. */
+function buildAnchors(
+  src: string,
+  cwd: string,
+  scratch: string,
+  typst: string,
+): string {
+  const script = readFileSync(join(DIR, "anchors.typ"), "utf8");
+  const r = spawnSync(typst, ["eval", "--in", src, script], {
+    encoding: "utf8",
+    cwd,
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  if (r.error) fail(`typst not runnable: ${r.error.message}`);
+  if (r.status !== 0) process.exit(r.status ?? 1);
+  const path = join(scratch, "anchors.json");
+  writeFileSync(path, r.stdout);
+  return path;
 }
 
 /** The APA citation style, hash-pinned. Pandoc's built-in style is
@@ -106,7 +150,7 @@ async function ensureApaCsl(): Promise<string> {
       "apa.csl at " +
         CSL_URL +
         " does not match the pinned hash; " +
-        "review it and update CSL_SHA256 in typ2docx/cli.ts",
+        "review it and update CSL_SHA256 in cli.ts",
     );
   mkdirSync(dirname(CSL_PATH), { recursive: true });
   writeFileSync(CSL_PATH, body);
@@ -139,11 +183,13 @@ export async function typeToDocx(args: string[]): Promise<void> {
   const log = (msg: string) => console.error(`typ2docx: ${msg}`);
   try {
     const referenceDocx = join(stockDir, "reference.docx");
+    const typst = buildTypst();
+    const anchorsPath = buildAnchors(src, cwd, scratch, typst);
     // Pass 0: source to AST (citeproc and the content filter run here
     // only; the fixpoint and the final render operate on the JSON).
     const astPath = join(scratch, "ast.json");
     run(
-      "pandoc",
+      PANDOC,
       [
         src,
         "-f",
@@ -159,10 +205,12 @@ export async function typeToDocx(args: string[]): Promise<void> {
         astPath,
       ],
       cwd,
+      { ...process.env, TYP2DOCX_ANCHORS: anchorsPath },
     );
     let doc = JSON.parse(readFileSync(astPath, "utf8"));
     if (!noFloats) {
       doc = await placeFloats(doc, {
+        pandoc: PANDOC,
         referenceDocx,
         workDir: scratch,
         cwd,
@@ -173,7 +221,7 @@ export async function typeToDocx(args: string[]): Promise<void> {
     const finalPath = join(scratch, "final.json");
     writeFileSync(finalPath, JSON.stringify(doc));
     run(
-      "pandoc",
+      PANDOC,
       [
         finalPath,
         "-f",

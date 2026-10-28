@@ -626,6 +626,200 @@ fix_display_math = function(blocks, in_region)
   return out
 end
 
+-- Typst anchors: Typst owns numbering, the filter maps it into the AST.
+
+local function anchor_warn(message)
+  io.stderr:write("typ2docx: " .. message .. "\n")
+end
+
+local function load_anchors()
+  local path = os.getenv("TYP2DOCX_ANCHORS")
+  if path == nil or path == "" then return nil end
+  local f = assert(io.open(path, "r"))
+  local text = f:read("*a")
+  f:close()
+  return pandoc.json.decode(text)
+end
+
+local function words(text)
+  local out = pandoc.List()
+  for word in text:gmatch("%S+") do
+    if #out > 0 then out:insert(pandoc.Space()) end
+    out:insert(pandoc.Str(word))
+  end
+  return out
+end
+
+-- The reader uses [label] only for an automatic supplement. Explicit
+-- supplements are content already and must not be overwritten.
+local function resolve_reference_links(doc, refs)
+  return doc:walk({
+    Link = function(el)
+      if not el.classes:includes("ref") then return nil end
+      local id = el.target:match("^#(.+)$")
+      if id == nil or refs[id] == nil then return nil end
+      if pandoc.utils.stringify(el.content) ~= "[" .. id .. "]" then
+        return nil
+      end
+      el.content = words(refs[id])
+      return el
+    end,
+  })
+end
+
+local function sequence_labels_align(items, expected, kind)
+  if #items ~= #expected then
+    anchor_warn(kind .. " anchor count does not match the AST; leaving " ..
+      kind .. " numbering unchanged")
+    return false
+  end
+  for i, item in ipairs(items) do
+    local key = expected[i].key or ""
+    if (item.label ~= "" or key ~= "") and item.label ~= key then
+      anchor_warn(kind .. " anchor map does not match the AST at item " .. i ..
+        "; leaving " .. kind .. " numbering unchanged")
+      return false
+    end
+  end
+  return true
+end
+
+local function has_appendix_label(header)
+  for _, inl in ipairs(header.content) do
+    if inl.t == "Str" and inl.text:match("^Appendix") then return true end
+  end
+  return false
+end
+
+local function number_headings(doc, expected)
+  local items = {}
+  doc:walk({
+    Header = function(h)
+      items[#items + 1] = { label = h.identifier or "", block = h }
+    end,
+  })
+  if not sequence_labels_align(items, expected, "heading") then return doc end
+  local index = 0
+  return doc:walk({
+    Header = function(h)
+      index = index + 1
+      local n = expected[index].number or ""
+      if n ~= "" and not has_appendix_label(h) then
+        h.content:insert(1, pandoc.Space())
+        h.content:insert(1, pandoc.Str(n))
+        return h
+      end
+    end,
+  })
+end
+
+-- After fix_display_math, a numbered equation is a paragraph holding one
+-- DisplayMath, optional mark wrappers, and an optional empty label span.
+local function equation_info(b)
+  if b.t ~= "Para" and b.t ~= "Plain" then return nil end
+  local info = { block = b, label = "", marked = false, count = 0, other = false }
+  local function scan(ils)
+    for _, inl in ipairs(ils) do
+      if inl.t == "Math" and inl.mathtype == "DisplayMath" then
+        info.count = info.count + 1
+      elseif inl.t == "Span" and inl.identifier ~= "" and #inl.content == 0 then
+        if info.label ~= "" and info.label ~= inl.identifier then
+          info.other = true
+        end
+        info.label = inl.identifier
+      elseif inl.t == "Span" then
+        if inl.classes:includes("mark") then info.marked = true end
+        scan(inl.content)
+      elseif not blank(inl) then
+        info.other = true
+      end
+    end
+  end
+  scan(b.content)
+  if info.count ~= 1 or info.other then return nil end
+  return info
+end
+
+local function strip_equation_anchors(ils)
+  local out = pandoc.List()
+  for _, inl in ipairs(ils) do
+    if inl.t == "Span" and inl.identifier ~= "" and #inl.content == 0 then
+      -- The visible number cell carries the bookmark instead.
+    elseif inl.t == "Span" then
+      inl.content = strip_equation_anchors(inl.content)
+      if #inl.content > 0 then out:insert(inl) end
+    elseif not blank(inl) then
+      out:insert(inl)
+    end
+  end
+  return out
+end
+
+local function equation_table(b, info, number)
+  b.content = strip_equation_anchors(b.content)
+  local number_content = words(number)
+  if info.marked then
+    number_content = pandoc.List({ pandoc.Span(number_content,
+      pandoc.Attr("", { "mark" }, {})) })
+  end
+  if info.label ~= "" then
+    number_content = pandoc.List({ pandoc.Span(number_content,
+      pandoc.Attr(info.label, {}, {})) })
+  end
+  local row = pandoc.Row({
+    pandoc.Cell(""),
+    pandoc.Cell({ b }, pandoc.AlignCenter),
+    pandoc.Cell({ pandoc.Plain(number_content) }, pandoc.AlignRight),
+  })
+  local bodies = {
+    {
+      attr = pandoc.Attr(),
+      body = { row },
+      head = {},
+      row_head_columns = 0,
+    },
+  }
+  local colspecs = {
+    { pandoc.AlignDefault, 0.1 },
+    { pandoc.AlignCenter, 0.8 },
+    { pandoc.AlignRight, 0.1 },
+  }
+  return pandoc.Table(pandoc.Caption(), colspecs, pandoc.TableHead(), bodies,
+    pandoc.TableFoot(), pandoc.Attr("", {}, { ["custom-style"] = "Equation" }))
+end
+
+local function number_equations(doc, expected)
+  local items = {}
+  local function collect(b)
+    local info = equation_info(b)
+    if info ~= nil then items[#items + 1] = info end
+  end
+  doc:walk({ Para = collect, Plain = collect })
+  if not sequence_labels_align(items, expected, "equation") then return doc end
+  local index = 0
+  local converted = {}
+  local function convert(b)
+    if converted[b] then return nil end
+    local info = equation_info(b)
+    if info == nil then return nil end
+    index = index + 1
+    local n = expected[index].number or ""
+    if n == "" then return nil end
+    converted[b] = true
+    return equation_table(b, info, n)
+  end
+  return doc:walk({ Para = convert, Plain = convert })
+end
+
+local function apply_anchors(doc)
+  local anchors = load_anchors()
+  if anchors == nil then return doc end
+  doc = resolve_reference_links(doc, anchors.refs or {})
+  if anchors.headings ~= nil then doc = number_headings(doc, anchors.headings) end
+  if anchors.equations ~= nil then doc = number_equations(doc, anchors.equations) end
+  return doc
+end
+
 function Pandoc(doc)
   -- House default: every table and figure floats (placement = auto) so
   -- Word keeps it whole and near where it was written. Explicit source
@@ -664,5 +858,6 @@ function Pandoc(doc)
       break
     end
   end
+  doc = apply_anchors(doc)
   return doc
 end

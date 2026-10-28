@@ -348,6 +348,7 @@ const DEFAULTS: FloatsOptions = {
 };
 
 export type FloatsContext = {
+  pandoc: string;
   referenceDocx: string;
   workDir: string; // scratch dir for pass artifacts
   cwd: string; // pandoc cwd (relative asset paths resolve from here)
@@ -462,7 +463,7 @@ export async function placeFloats(
     const docxPath = join(ctx.workDir, `pass${pass}.docx`);
     writeFileSync(jsonPath, JSON.stringify({ ...doc, blocks: render }));
     run(
-      "pandoc",
+      ctx.pandoc,
       [
         "-f",
         "json",

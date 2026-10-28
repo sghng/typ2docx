@@ -1,7 +1,6 @@
 --- a/word/styles.xml
 +++ b/word/styles.xml
-@@ -576,6 +576,7 @@
-     <w:unhideWhenUsed />
+@@ -575,5 +575,6 @@
      <w:qFormat />
      <w:tblPr>
 +      <w:jc w:val="center" />

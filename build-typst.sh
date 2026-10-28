@@ -4,7 +4,7 @@
 # submodule is required.
 set -eu
 cd "$(dirname "$0")"
-ROOT="$(cd .. && pwd)"
+ROOT="$PWD"
 BUILD="$ROOT/.build/typst-head"
 TYPST_REV="fe537181def05ba2760e305befd4fe8d245f06ce"
 # Last commit before Hayagriva replaced serde_yaml with yaml_serde. Typst

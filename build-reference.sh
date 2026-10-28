@@ -14,12 +14,13 @@
 # Nothing is cached: abstract typ2docx rebuilds a fresh stock into a
 # private temp dir on every conversion (--out below), so the patch series
 # is the single source of truth. A manual invocation writes
-# reference/reference.docx (uncommitted). --max-patch N applies only the
-# first N patches and writes tools/reference.debug.docx; 0 means the
-# pristine export untouched, for examining pandoc's defaults.
+# .build/reference.docx (ignored). --max-patch N applies only the first N
+# patches and writes .build/reference.debug.docx; 0 means the pristine export
+# untouched, for examining pandoc's defaults.
 set -eu
 cd "$(dirname "$0")"
-ROOT="$(cd .. && pwd)"
+ROOT="$PWD"
+cd "$ROOT/patches"
 
 OUT=""
 MAX_PATCH=""
@@ -69,9 +70,15 @@ if [ -n "$MAX_PATCH" ] && [ "$MAX_PATCH" -gt "$TOTAL" ]; then
   exit 1
 fi
 
+PANDOC="$ROOT/.build/bin/pandoc"
+if [ ! -x "$PANDOC" ]; then
+  echo "$PANDOC is missing; run just build first" >&2
+  exit 1
+fi
+
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/refbuild.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT INT TERM
-pandoc -o "$WORK/pristine.docx" --print-default-data-file reference.docx
+"$PANDOC" -o "$WORK/pristine.docx" --print-default-data-file reference.docx
 unzip -q "$WORK/pristine.docx" -d "$WORK/unpacked"
 
 APPLIED=0
@@ -86,14 +93,15 @@ for p in [0-9][0-9]-*.patch; do
 done
 
 if [ -n "$MAX_PATCH" ]; then
-  DEST="$ROOT/tools/reference.debug.docx"
+  DEST="$ROOT/.build/reference.debug.docx"
   NOTE=" ($APPLIED of $TOTAL patches)"
 elif [ -n "$OUT" ]; then
   DEST="$OUT"
   NOTE=""
 else
-  DEST="$ROOT/reference/reference.docx"
+  DEST="$ROOT/.build/reference.docx"
   NOTE=""
 fi
+mkdir -p "$(dirname "$DEST")"
 (cd "$WORK/unpacked" && zip -q -r -X "$DEST" . -x '*.DS_Store')
 echo "built $DEST$NOTE"

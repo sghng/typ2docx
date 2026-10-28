@@ -1,0 +1,28 @@
+--- a/word/styles.xml
++++ b/word/styles.xml
+@@ -715,4 +715,20 @@
+       <w:color w:val="000000" />
+     </w:rPr>
+   </w:style>
++  <w:style w:type="table" w:customStyle="1" w:styleId="Equation">
++    <w:name w:val="Equation" />
++    <w:basedOn w:val="TableNormal" />
++    <w:uiPriority w:val="99" />
++    <w:semiHidden />
++    <w:tblPr>
++      <w:jc w:val="center" />
++      <w:tblInd w:w="0" w:type="dxa" />
++      <w:tblCellMar>
++        <w:top w:w="0" w:type="dxa" />
++        <w:left w:w="0" w:type="dxa" />
++        <w:bottom w:w="0" w:type="dxa" />
++        <w:right w:w="0" w:type="dxa" />
++      </w:tblCellMar>
++    </w:tblPr>
++  </w:style>
+ </w:styles>
+# Numbered equations ride in borderless three-column layout tables: a blank
+# left cell, OMML in the center, and the number at the right. The Equation
+# table style suppresses inherited rules and cell margins and zeroes the
+# default table indent. Equation tables have empty captions, so they do not
+# enter the Table numbering sequence.
