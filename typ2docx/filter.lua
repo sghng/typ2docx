@@ -565,10 +565,34 @@ end
 
 local fix_display_math
 
+-- Word table cells use Compact for Plain blocks. Normalize cell paragraphs
+-- instead of letting them inherit body leading and first-line indentation.
+local function compact_cell_blocks(blocks)
+  local out = pandoc.List()
+  for _, b in ipairs(blocks) do
+    if b.t == "BlockQuote" then
+      out:extend(compact_cell_blocks(b.content))
+    elseif b.t == "Para" then
+      out:insert(pandoc.Plain(b.content))
+    elseif b.t == "BulletList" or b.t == "OrderedList" then
+      for i, item in ipairs(b.content) do
+        b.content[i] = compact_cell_blocks(item)
+      end
+      out:insert(b)
+    elseif b.t == "Div" then
+      b.content = compact_cell_blocks(b.content)
+      out:insert(b)
+    else
+      out:insert(b)
+    end
+  end
+  return out
+end
+
 local function fix_rows(rows, in_region)
   for _, row in ipairs(rows or {}) do
     for _, cell in ipairs(row.cells or {}) do
-      cell.content = fix_display_math(cell.content, in_region)
+      cell.content = compact_cell_blocks(fix_display_math(cell.content, in_region))
     end
   end
 end
@@ -579,6 +603,8 @@ local function fix_one(b, in_region)
   if b.t == "Div" or b.t == "BlockQuote" then
     b.content = fix_display_math(b.content,
       in_region or (b.t == "Div" and b.classes:includes("mark")))
+  elseif b.t == "Figure" then
+    b.content = fix_display_math(b.content, in_region)
   elseif b.t == "BulletList" or b.t == "OrderedList" then
     for i, item in ipairs(b.content) do
       b.content[i] = fix_display_math(item, in_region)
