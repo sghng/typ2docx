@@ -29,9 +29,14 @@ const CAPTION_STYLES = new Set(["TableCaption", "ImageCaption"]);
  *  Idempotent. Pandoc emits self-closing tags as `<w:x />` with a space,
  *  so every pattern here is space-tolerant. */
 function addKeepNext(para: string): string {
-  if (para.includes("<w:keepNext/>")) return para;
+  if (/<w:keepNext\s*\/>/.test(para)) return para;
+  if (/^<w:p\s*\/>$/.test(para))
+    return "<w:p><w:pPr><w:keepNext/></w:pPr></w:p>";
   const pStyle = para.match(/<w:pStyle w:val="[^"]*"\s*\/>/);
   if (pStyle) return para.replace(pStyle[0], pStyle[0] + "<w:keepNext/>");
+  const emptyPPr = para.match(/<w:pPr\s*\/>/);
+  if (emptyPPr)
+    return para.replace(emptyPPr[0], "<w:pPr><w:keepNext/></w:pPr>");
   if (para.includes("<w:pPr>"))
     return para.replace("<w:pPr>", "<w:pPr><w:keepNext/>");
   return para.replace(/^<w:p>/, "<w:p><w:pPr><w:keepNext/></w:pPr>");
@@ -40,7 +45,10 @@ function addKeepNext(para: string): string {
 /** Ensure a cantSplit property in a row's trPr (cantSplit precedes
  *  tblHeader in the schema). Idempotent. */
 function addCantSplit(row: string): string {
-  if (row.includes("<w:cantSplit/>")) return row;
+  if (/<w:cantSplit\s*\/>/.test(row)) return row;
+  const emptyTrPr = row.match(/<w:trPr\s*\/>/);
+  if (emptyTrPr)
+    return row.replace(emptyTrPr[0], "<w:trPr><w:cantSplit/></w:trPr>");
   if (row.includes("<w:trPr>"))
     return row.replace("<w:trPr>", "<w:trPr><w:cantSplit/>");
   return row.replace(/^<w:tr>/, "<w:tr><w:trPr><w:cantSplit/></w:trPr>");
@@ -50,7 +58,7 @@ function addCantSplit(row: string): string {
  *  house float-note convention (mirrors is_note_para in filter.lua). */
 function isNotePara(para: string): boolean {
   const m = para.match(
-    /^<w:p>(?:<w:pPr>.*?<\/w:pPr>)?<w:r><w:rPr>(.*?)<\/w:rPr><w:t[^>]*>([^<]*)<\/w:t>/,
+    /^<w:p>(?:<w:pPr>.*?<\/w:pPr>|<w:pPr\s*\/>)?<w:r><w:rPr>(.*?)<\/w:rPr><w:t[^>]*>([^<]*)<\/w:t>/,
   );
   if (!m) return false;
   return /<w:i\s*\/>/.test(m[1]) && /^Note\.?$/.test(m[2].trim());

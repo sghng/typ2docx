@@ -143,14 +143,25 @@ function firstInlines(b: unknown): Inline[] | null {
   const blk = b as Block;
   if (blk.t === "Para" || blk.t === "Plain") return blk.c as Inline[];
   if (blk.t === "Header") return (blk.c as unknown[])[2] as Inline[];
-  if ((blk.t === "Div" || blk.t === "Figure") && Array.isArray(blk.c))
+  if (blk.t === "BlockQuote" && Array.isArray(blk.c))
+    return firstInlines(blk.c);
+  if (blk.t === "Div" && Array.isArray(blk.c))
     return firstInlines((blk.c as unknown[])[1]);
+  if (blk.t === "Figure" && Array.isArray(blk.c)) {
+    const c = blk.c as unknown[];
+    const caption = firstInlines((c[1] as unknown[])[1]);
+    return caption ?? firstInlines(c[2]);
+  }
   if (blk.t === "Table" && Array.isArray(blk.c)) {
     // Table c: [attr, caption, colspecs, head, bodies, foot]; head and
     // foot are [attr, [rows]]; a body is [attr, rowHeadColumns,
     // [headRows], [bodyRows]]; a row is [attr, [cells]]; a cell is
     // [attr, align, rowspan, colspan, [blocks]].
     const t = blk.c as unknown[];
+    // Keep the start token out of narrow cells, where it can be clipped.
+    // Table captions render above the table in the DOCX pipeline.
+    const caption = firstInlines((t[1] as unknown[])[1]);
+    if (caption) return caption;
     const rowCells = (rows: unknown): Block[][][] =>
       Array.isArray(rows)
         ? (rows as unknown[]).map((r) => (r as unknown[])[1] as Block[][])
@@ -163,9 +174,18 @@ function firstInlines(b: unknown): Inline[] | null {
       ]),
       ...rowCells((t[5] as unknown[])[1]),
     ];
+    const widths = (t[2] as unknown[]).map((spec) => {
+      const width = (spec as unknown[])[1] as { t?: string; c?: unknown };
+      return width.t === "ColWidth" && typeof width.c === "number"
+        ? width.c
+        : 0;
+    });
     for (const row of sections) {
-      for (const cell of row) {
-        const r = firstInlines(cell[4]);
+      const cells = row
+        .map((_, i) => i)
+        .sort((a, b) => (widths[b] ?? 0) - (widths[a] ?? 0));
+      for (const ci of cells) {
+        const r = firstInlines(row[ci][4]);
         if (r) return r;
       }
     }
@@ -186,8 +206,15 @@ function lastInlines(b: unknown): Inline[] | null {
   const blk = b as Block;
   if (blk.t === "Para" || blk.t === "Plain") return blk.c as Inline[];
   if (blk.t === "Header") return (blk.c as unknown[])[2] as Inline[];
-  if ((blk.t === "Div" || blk.t === "Figure") && Array.isArray(blk.c))
+  if (blk.t === "BlockQuote" && Array.isArray(blk.c))
+    return lastInlines(blk.c);
+  if (blk.t === "Div" && Array.isArray(blk.c))
     return lastInlines((blk.c as unknown[])[1]);
+  if (blk.t === "Figure" && Array.isArray(blk.c)) {
+    const c = blk.c as unknown[];
+    const content = lastInlines(c[2]);
+    return content ?? lastInlines((c[1] as unknown[])[1]);
+  }
   if (blk.t === "Table" && Array.isArray(blk.c)) {
     const t = blk.c as unknown[];
     const rowCells = (rows: unknown): Block[][][] =>
@@ -202,10 +229,19 @@ function lastInlines(b: unknown): Inline[] | null {
       ]),
       ...rowCells((t[5] as unknown[])[1]),
     ];
+    const widths = (t[2] as unknown[]).map((spec) => {
+      const width = (spec as unknown[])[1] as { t?: string; c?: unknown };
+      return width.t === "ColWidth" && typeof width.c === "number"
+        ? width.c
+        : 0;
+    });
     for (let s = sections.length - 1; s >= 0; s--) {
-      const cells = sections[s];
-      for (let ci = cells.length - 1; ci >= 0; ci--) {
-        const r = lastInlines(cells[ci][4]);
+      const row = sections[s];
+      const cells = row
+        .map((_, i) => i)
+        .sort((a, b) => (widths[b] ?? 0) - (widths[a] ?? 0));
+      for (const ci of cells) {
+        const r = lastInlines(row[ci][4]);
         if (r) return r;
       }
     }

@@ -578,7 +578,7 @@ local function fix_one(b, in_region)
   if chopped then return chopped end
   if b.t == "Div" or b.t == "BlockQuote" then
     b.content = fix_display_math(b.content,
-      in_region or b.classes:includes("mark"))
+      in_region or (b.t == "Div" and b.classes:includes("mark")))
   elseif b.t == "BulletList" or b.t == "OrderedList" then
     for i, item in ipairs(b.content) do
       b.content[i] = fix_display_math(item, in_region)
