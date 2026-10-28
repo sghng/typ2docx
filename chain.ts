@@ -1,5 +1,5 @@
 /**
- * typ2docx/chain.ts -- keep-together chains as a docx post-process.
+ * chain.ts -- keep-together chains as a docx post-process.
  *
  * The house float policy (float every table and figure by default) needs
  * the standard Word recipe -- cantSplit on every row, keepNext chaining

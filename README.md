@@ -41,7 +41,7 @@ paragraphs must not accidentally acquire either treatment.
 | Lua filter | Structural normalization, such as compact cell paragraphs and caption or note grouping |
 | Pandoc and its fork | Reader and writer behavior that is upstreamable or difficult to represent correctly elsewhere |
 | CLI and layout code | Measurement, pagination, table layout, and DOCX post-processing |
-| Tests | Semantic invariants, schema validation, and rendered-page review |
+| Validation | Semantic invariants, schema validation, and rendered-page review |
 
 Source edits are appropriate when the semantic markup is wrong or incomplete,
 or when the source is the cleanest place to express a content-level decision.
@@ -89,6 +89,9 @@ has three levels:
 3. **Rendered-page checks** establish that pages have no clipping, garbled
    headers, inflated rows, stranded floats, or unreadable spacing.
 
+These checks currently run through documented out-of-tree manuscript and
+response-letter reproductions rather than an in-repo test harness.
+
 Compare rendered output against the APA rubric, not against the Typst PDF
 pixel-for-pixel. LibreOffice renders are useful for automated inspection, but
 they do not replace manual review in Word when rendering differences matter.
@@ -104,7 +107,8 @@ they do not replace manual review in Word when rendering differences matter.
   series.
 
 The Typst build requires git, Cargo with Rust 1.92 or newer, and network
-access on the first run.
+access on the first run. Conversion also requires Bun, LibreOffice
+(`soffice`), Poppler (`pdftotext`), and `zip`, `unzip`, and `patch`.
 
 Initialize the pandoc submodule and build Typst:
 

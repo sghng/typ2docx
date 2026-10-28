@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * cli.ts -- the `abstract typ2docx` command.
+ * cli.ts -- the `typ2docx` command.
  *
  * Converts a Typst source to Word beside it: house reference stock
  * rebuilt fresh from the patch series, citeproc under the hash-pinned
@@ -10,7 +10,7 @@
  * blocks the Typst reader marked with a placement keyval. No server
  * or model involved.
  *
- *   abstract typ2docx <file.typ> [--no-floats] [--max-passes N]
+ *   typ2docx <file.typ> [--no-floats] [--max-passes N]
  *                                  [--keep-scratch]
  */
 import { spawnSync } from "node:child_process";
@@ -31,11 +31,11 @@ import { placeFloats } from "./floats.ts";
 const DIR = dirname(fileURLToPath(import.meta.url));
 const HARNESS_DIR = DIR;
 const PANDOC = join(HARNESS_DIR, ".build", "bin", "pandoc");
-const ABSTRACT_HOME =
-  process.env.ABSTRACT_HOME ?? join(homedir(), ".local", "share", "abstract");
+const TYP2DOCX_HOME =
+  process.env.TYP2DOCX_HOME ?? join(homedir(), ".local", "share", "typ2docx");
 
 function fail(message: string): never {
-  console.error(`abstract: ${message}`);
+  console.error(`typ2docx: ${message}`);
   process.exit(1);
 }
 
@@ -117,14 +117,14 @@ function buildAnchors(
  * Chicago author-date, but the drafts cite APA (their Typst PDFs
  * render style: "apa"), so the conversion passes the canonical APA
  * CSL explicitly. The file is fetched once from the styles repository
- * into the abstract home and verified against the pin; a drifted
+ * into the typ2docx home and verified against the pin; a drifted
  * upstream file fails the run rather than silently changing the
  * citation format, and updating the pin is a reviewed decision. */
 const CSL_URL =
   "https://raw.githubusercontent.com/citation-style-language/styles/master/apa.csl";
 const CSL_SHA256 =
   "3917def5fc951b104d64216c3373096042368b9704ba269ca83c14ebaba889fc";
-const CSL_PATH = join(ABSTRACT_HOME, "csl", "apa.csl");
+const CSL_PATH = join(TYP2DOCX_HOME, "csl", "apa.csl");
 
 async function ensureApaCsl(): Promise<string> {
   if (existsSync(CSL_PATH)) {
@@ -165,15 +165,22 @@ function sha256hex(data: Uint8Array): string {
  *  source's directory so relative bibliography and asset paths in the
  *  .typ resolve as they do when drafting there. */
 export async function typeToDocx(args: string[]): Promise<void> {
-  const arg = args.find((a) => !a.startsWith("--"));
-  if (!arg) fail("usage: abstract typ2docx <file.typ> [--no-floats]");
+  const arg = args.find(
+    (a, i) => !a.startsWith("--") && args[i - 1] !== "--max-passes",
+  );
+  if (!arg) fail("usage: typ2docx <file.typ> [--no-floats]");
   const src = resolve(arg);
   if (!src.endsWith(".typ")) fail(`not a .typ file: ${arg}`);
   if (!existsSync(src)) fail(`not found: ${arg}`);
   const noFloats = args.includes("--no-floats");
   const keepScratch = args.includes("--keep-scratch");
   const passesArg = args.find((a) => a.startsWith("--max-passes="));
-  const maxPasses = passesArg ? Number(passesArg.split("=")[1]) : 0;
+  const passesIndex = args.indexOf("--max-passes");
+  const maxPasses = passesArg
+    ? Number(passesArg.split("=")[1])
+    : passesIndex >= 0
+      ? Number(args[passesIndex + 1])
+      : 0;
 
   const cwd = dirname(src);
   const out = src.slice(0, -4) + ".docx";

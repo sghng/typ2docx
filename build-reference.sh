@@ -11,7 +11,7 @@
 # exists after 02-center-figures-tables. fuzz=0 makes any drift (wrong
 # order, changed template) fail loudly instead of re-anchoring a hunk.
 #
-# Nothing is cached: abstract typ2docx rebuilds a fresh stock into a
+# Nothing is cached: typ2docx rebuilds a fresh stock into a
 # private temp dir on every conversion (--out below), so the patch series
 # is the single source of truth. A manual invocation writes
 # .build/reference.docx (ignored). --max-patch N applies only the first N

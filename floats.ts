@@ -1,5 +1,5 @@
 /**
- * typ2docx/floats.ts -- float placement fixpoint for Word export.
+ * floats.ts -- float placement fixpoint for Word export.
  *
  * Blocks carrying a `placement` attr keyval (stamped on every table and
  * figure by filter.lua, the house float-by-default policy) must land
