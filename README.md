@@ -107,8 +107,9 @@ they do not replace manual review in Word when rendering differences matter.
   series.
 
 The Typst build requires git, Cargo with Rust 1.92 or newer, and network
-access on the first run. Conversion also requires Bun, LibreOffice
-(`soffice`), Poppler (`pdftotext`), and `zip`, `unzip`, and `patch`.
+access on the first run. The pandoc build requires GHC and Cabal. Conversion
+also requires Bun, LibreOffice (`soffice`), Poppler (`pdftotext`), and `zip`,
+`unzip`, and `patch`.
 
 Initialize the pandoc submodule and build Typst:
 

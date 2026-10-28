@@ -3,8 +3,8 @@ ROOT := justfile_directory()
 default: build
 
 build:
-  "{{ROOT}}/build-typst.sh"
   test -f "{{ROOT}}/pandoc/cabal.project" || { echo "Run git submodule update --init --recursive first"; exit 1; }
+  "{{ROOT}}/build-typst.sh"
   cd "{{ROOT}}/pandoc" && cabal build --ghc-options=-Werror exe:pandoc
   mkdir -p "{{ROOT}}/.build/bin"
   cp "$(cd "{{ROOT}}/pandoc" && cabal list-bin exe:pandoc)" "{{ROOT}}/.build/bin/pandoc"
