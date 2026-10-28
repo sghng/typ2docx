@@ -99,6 +99,8 @@ they do not replace manual review in Word when rendering differences matter.
 ## Toolchain
 
 - `pandoc/` is a submodule tracking the custom pandoc fork's `main` branch.
+- `typst-hs/` pins a temporary Typst parser fix for shorthand references
+  containing punctuation. Retire it once upstream releases the fix.
 - `build-typst.sh` builds Typst and Hayagriva at pinned, mutually
   compatible upstream commits. Their sources and all build artifacts stay in
   the ignored `.build/` directory, so no forks or additional submodules are
