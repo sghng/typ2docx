@@ -185,8 +185,10 @@ their targets. Numbered headings take their displayed ordinal from the map,
 except appendix headings, which keep the house label treatment.
 
 A numbered display equation stays OMML and moves into a borderless
-three-column layout table with a blank left cell, the equation in the center,
-and its number at the right. The `Equation` stock style removes inherited
+5%/90%/5% three-column layout table with a blank left cell, the equation in
+the widened center, and its number at the right. Equal narrow gutters keep
+the equation centered without taking away a fifth of its available width.
+The `Equation` stock style removes inherited
 rules, cell margins, and the default table indent. These tables have no
 placement attribute and empty captions, so they neither float nor consume
 Table sequence numbers. The equation label moves onto the visible number,

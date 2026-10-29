@@ -22,7 +22,8 @@
 +  </w:style>
  </w:styles>
 # Numbered equations ride in borderless three-column layout tables: a blank
-# left cell, OMML in the center, and the number at the right. The Equation
+# narrow left cell, OMML in the widened center, and the number at the right.
+# Equal 5% gutters leave 90% of the text width to the equation. The Equation
 # table style suppresses inherited rules and cell margins and zeroes the
 # default table indent. Equation tables have empty captions, so they do not
 # enter the Table numbering sequence.
