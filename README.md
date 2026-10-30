@@ -89,8 +89,10 @@ has three levels:
 3. **Rendered-page checks** establish that pages have no clipping, garbled
    headers, inflated rows, stranded floats, or unreadable spacing.
 
-These checks currently run through documented out-of-tree manuscript and
-response-letter reproductions rather than an in-repo test harness.
+Rendered checks run through documented out-of-tree manuscript and
+response-letter reproductions. Focused equation-manifest and DOCX/PDF parsing
+tests also run with `bun test equations.test.ts`; they supplement rather than
+replace rendered-page review.
 
 Compare rendered output against the APA rubric, not against the Typst PDF
 pixel-for-pixel. LibreOffice renders are useful for automated inspection, but
@@ -110,8 +112,8 @@ they do not replace manual review in Word when rendering differences matter.
 
 The Typst build requires git, Cargo with Rust 1.92 or newer, and network
 access on the first run. The pandoc build requires GHC and Cabal. Conversion
-also requires Bun, LibreOffice (`soffice`), Poppler (`pdftotext`), and `zip`,
-`unzip`, and `patch`.
+also requires Bun, LibreOffice (`soffice`, with the Writer and Math modules),
+Poppler (`pdftotext`), and `zip`, `unzip`, and `patch`.
 
 Initialize the pandoc submodule and build Typst:
 
@@ -185,14 +187,44 @@ their targets. Numbered headings take their displayed ordinal from the map,
 except appendix headings, which keep the house label treatment.
 
 A numbered display equation stays OMML and moves into a borderless
-5%/90%/5% three-column layout table with a blank left cell, the equation in
+6%/88%/6% three-column layout table with a blank left cell, the equation in
 the widened center, and its number at the right. Equal narrow gutters keep
-the equation centered without taking away a fifth of its available width.
+the equation centered without taking away a fifth of its available width,
+while leaving room for two-digit parenthesized equation numbers.
 The `Equation` stock style removes inherited
 rules, cell margins, and the default table indent. These tables have no
 placement attribute and empty captions, so they neither float nor consume
 Table sequence numbers. The equation label moves onto the visible number,
 which gives internal links a real bookmark target.
+
+## Equation layout diagnostics
+
+After the final DOCX is written, the converter performs one best-effort
+LibreOffice layout pass for display equations. A diagnostic DOCX copy receives
+the usual narrow inline measurement tokens; the delivered DOCX is never
+patched. PDF content bounds identify clear horizontal overflow, and
+cross-page displacement is reported as a possible wrap. Numbered equations
+are measured in their table cells rather than against an assumed full-width
+paragraph. Same-page marker movement is not treated as proof of wrapping:
+LibreOffice can move markers around a tall formula object without adding a
+second equation line. Consequently, this conservative check can miss
+same-page automatic wrapping.
+
+A warning includes the equation ordinal and its actual label; the displayed
+number is included when the anchor sequence and labels align. For example:
+
+```text
+typ2docx: warning: display equation (4) <eq:model> may wrap or overflow in the LibreOffice layout; review manual line breaking
+```
+
+Accurate source-line reporting requires a separate upstream `typst-hs` change:
+its evaluated equation nodes currently do not retain usable source spans.
+
+The check is nonfatal and never rewrites mathematics. Authored multiline and
+alignment structures are skipped in this initial version, so their deliberate
+rows are not reported as accidental wrapping. Missing markers or a failed
+render suppress the affected verdict and produce their own warning. This is a
+LibreOffice layout diagnostic, not a guarantee of Word's line breaking.
 
 ## Measurement discipline
 

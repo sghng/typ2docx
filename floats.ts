@@ -104,7 +104,7 @@ export function countNestedFloats(blocks: Block[]): number {
  * render copies. The "XQ" prefix plus three base36 digits cannot occur
  * as a natural word, so bbox words are matched by format alone.
  */
-function tokenXml(token: string): string {
+export function tokenXml(token: string): string {
   return (
     `<w:r><w:rPr><w:color w:val="FFFFFF"/><w:w w:val="30"/>` +
     `<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>` +
@@ -117,7 +117,7 @@ function tokenRun(token: string): Inline {
 }
 
 const B36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-function token(n: number): string {
+export function token(n: number): string {
   let s = "";
   for (let i = 0; i < 3; i++) {
     s = B36[n % 36] + s;

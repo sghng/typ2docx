@@ -756,9 +756,9 @@ local function equation_table(b, info, number)
   -- Equal narrow gutters preserve page-center alignment without making
   -- numbered equations wrap much sooner than their unnumbered counterparts.
   local colspecs = {
-    { pandoc.AlignDefault, 0.05 },
-    { pandoc.AlignCenter, 0.9 },
-    { pandoc.AlignRight, 0.05 },
+    { pandoc.AlignDefault, 0.06 },
+    { pandoc.AlignCenter, 0.88 },
+    { pandoc.AlignRight, 0.06 },
   }
   return pandoc.Table(pandoc.Caption(), colspecs, pandoc.TableHead(), bodies,
     pandoc.TableFoot(), pandoc.Attr("", {}, { ["custom-style"] = "Equation" }))

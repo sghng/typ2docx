@@ -6,9 +6,9 @@
  * rebuilt fresh from the patch series, citeproc under the hash-pinned
  * APA style, native numbering, Typst counters from anchors.typ for
  * references and displayed numbers, the content-adjustment filter
- * (filter.lua), and the float placement fixpoint (floats.ts) for
- * blocks the Typst reader marked with a placement keyval. No server
- * or model involved.
+ * (filter.lua), the float placement fixpoint (floats.ts) for blocks the
+ * Typst reader marked with a placement keyval, and a final best-effort
+ * equation layout check (equations.ts). No server or model involved.
  *
  *   typ2docx <file.typ> [--no-floats] [--max-passes N]
  *                                  [--keep-scratch]
@@ -26,6 +26,7 @@ import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chainDocx } from "./chain.ts";
+import { checkEquationLayout } from "./equations.ts";
 import { placeFloats } from "./floats.ts";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -246,6 +247,12 @@ export async function typeToDocx(args: string[]): Promise<void> {
     // The house keep-together chain for every table and captioned float,
     // as a docx post-process (pandoc stays pristine).
     chainDocx(out);
+    checkEquationLayout(doc, {
+      docxPath: out,
+      anchors: JSON.parse(readFileSync(anchorsPath, "utf8")),
+      workDir: scratch,
+      log,
+    });
     console.log(`wrote ${out}`);
   } finally {
     rmSync(stockDir, { recursive: true, force: true });

@@ -23,7 +23,8 @@
  </w:styles>
 # Numbered equations ride in borderless three-column layout tables: a blank
 # narrow left cell, OMML in the widened center, and the number at the right.
-# Equal 5% gutters leave 90% of the text width to the equation. The Equation
+# Equal 6% gutters leave 88% of the text width to the equation and keep
+# two-digit parenthesized numbers on one line. The Equation
 # table style suppresses inherited rules and cell margins and zeroes the
 # default table indent. Equation tables have empty captions, so they do not
 # enter the Table numbering sequence.
